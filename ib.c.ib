@@ -212,9 +212,9 @@ static bool check_word(const char *line, const char *word, const char *stop)
 	char line_cpy[LINE_MAX]
 	strcpy(line_cpy, line)
 	
-	char *tok  = strtok(line_cpy, " ")
+	char *tok  = strtok(line_cpy, " \t\n")
 	
-	while (tok && (!stop ||tok < stop))
+	while (tok && (!stop ||tok <= stop))
 		if (!strcmp(tok, word))
 			return true
 		
@@ -310,13 +310,13 @@ static void term_check(context *cont)
 	else if (!strchr(l_line->str, '(') && l_line->comment > get_spaces(l_line->tabs) + 1 && \
 	         !check_word(l_line->str, "else", l_line->str + l_line->comment) && \
 	         !check_word(l_line->str, "do"  , l_line->str + l_line->comment))
-		if (l_line->str[l_line->comment - 2] == '=' || \
-		    check_word(l_line->str, "enum", l_line->str + l_line->comment))
-			cont->cterms[cont->ctermc++] = l_line->tabs
-		
 		if (l_line->str[l_line->comment - 2] == ':')
 			cont->nbranchs[cont->nbranchc++] = l_line->tabs
 			return
+		
+		if (l_line->str[l_line->comment - 2] == '=' || \
+		    check_word(l_line->str, "enum", l_line->str + l_line->comment))
+			cont->cterms[cont->ctermc++] = l_line->tabs
 		
 		cont->tbranchs[cont->tbranchc++] = l_line->tabs
 
