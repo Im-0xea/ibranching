@@ -1,23 +1,21 @@
-PREFIX := ${HOME}/
+PREFIX := ${HOME}
 
 CC := gcc
 STRIP := strip
 
-CFLAGS := -std=c11 -Wall 
-LDFLAGS := 
+CFLAGS := -O0 -std=c11 -Wall -D_POSIX_C_SOURCE -g
+LDFLAGS :=
 
 STRIPFLAGS := --strip-all -R .comment -x
 
 all:
-	ib ib.c.ib -i --flags "$(CFLAGS) $(LDFLAGS)" --compiler gcc
-	#${STRIP} $(STRIPFLAGS) ib -o ib
+	ib ib.c.ib -i --flags "$(CFLAGS) $(LDFLAGS)"
 
 install:
 	cp ib ${PREFIX}/bin/
 
 test: all
 	./ib ib.c.ib -i --flags "$(CFLAGS) $(LDFLAGS)"
-	#${STRIP} $(STRIPFLAGS) ib -o ib
 
 sa:
 	cppcheck cppcheck --enable=all --inconclusive --library=posix --force --suppress=missingIncludeSystem ib.c
@@ -28,5 +26,4 @@ clean:
 
 bootstrap:
 	$(CC) ib.c -o ib $(CFLAGS) $(LDFLAGS)
-	#${STRIP} $(STRIPFLAGS) ib -o ib
 	cp ib ${PREFIX}/bin/

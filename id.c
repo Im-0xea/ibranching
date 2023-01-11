@@ -4,6 +4,7 @@
 
 /* todo:
  *   -experiment with preprocessing before parsing
+ *   -write typedef parser
  */
 
 
@@ -26,6 +27,8 @@
 #include <string.h>
 #include <unistd.h>
 
+FILE *popen(const char *command, const char *mode);
+int  pclose(FILE *stream);
 
 #define noreturn _Noreturn
 
@@ -94,10 +97,20 @@ enum arg_mode
 
 typedef enum arg_mode amode;
 
+enum pars_mode
+{
+	pre,
+	imr,
+	bodge
+};
+
+typedef enum pars_mode pmode;
+
 
 psize spaces          = 0;
 bool  to_stdout       = false;
 bool  integrate       = false;
+bool  verbose         = false;
 char  *overwrite_out  = NULL;
 char  *overwrite_comp = NULL;
 char  *overwrite_flag = NULL;
@@ -122,41 +135,38 @@ static void msg_out(const size_t num, ...)
 	va_end(messages);
 }
 
-static noreturn void error(const char *msg, const int code, const psize loc)
+static void faulter(const char *label, const color col, const char *msg, const char *typ, const psize loc)
 {
-	set_color(red);
+	set_color(col);
 	
 	if (!loc)
 	{
-		msg_out(2, "error", msg);
+		msg_out(3, label, typ, msg);
 	}
 	else
 	{
 		char locs[16];
 		sprintf(locs, "%d", loc);
-		msg_out(4, "error", msg, "at line", locs);
+		msg_out(5, label, typ, msg, "at line", locs);
 	};
 	
 	set_color(blank);
+}
+
+static noreturn void error(const char *typ, const char *msg, const int code, const psize loc)
+{
+	faulter("error", red, msg, typ, loc);
 	exit(code);
 }
 
 static void warn(const char *typ, const char *msg, const psize loc)
 {
-	set_color(magenta);
-	
-	if (!loc)
-	{
-		msg_out(3, "warning", typ, msg);
-	}
-	else
-	{
-		char locs[16];
-		sprintf(locs, "%d", loc);
-		msg_out(5, "warning", typ, msg, "at line", locs);
-	};
-	
-	set_color(blank);
+	faulter("warning", magenta, msg, typ, loc);
+}
+
+static void notice(const char *typ, const char *msg, const psize loc)
+{
+	faulter("notice", white, msg, typ, loc);
 }
 
 static void transfere_line(line_t *line, line_t *input_line)
@@ -272,8 +282,7 @@ static bool check_word(const char *line, const char *word, const char *stop)
 	char line_cpy[LINE_MAX];
 	strcpy(line_cpy, line);
 	
-	char *save = NULL;
-	char *tok  = strtok_r(line_cpy, " ", &save);
+	char *tok  = strtok(line_cpy, " ");
 	
 	while (tok && (!stop ||tok < stop))
 	{
@@ -282,7 +291,7 @@ static bool check_word(const char *line, const char *word, const char *stop)
 			return true;
 		}
 		
-		tok = strtok_r(NULL, word, &save);
+		tok = strtok(NULL, word);
 	}
 	
 	return false;
@@ -421,7 +430,7 @@ static void term_check(context *cont)
 	         !check_word(l_line->str, "do"  , l_line->str + l_line->comment))
 	{
 		if (l_line->str[l_line->comment - 2] == '=' || \
-		    check_word(l_line->str, "enum", minp(strchr(l_line->str, '('), l_line->str + l_line->comment)))
+		    check_word(l_line->str, "enum", l_line->str + l_line->comment))
 		{
 			cont->cterms[cont->ctermc++] = l_line->tabs;
 		}
@@ -507,14 +516,23 @@ static type modeset(const char *path)
 static bool vexec(const char *path)
 {
 	FILE *p = popen(path, "r");
-	if (!p) return false;
+	
+	if (!p)
+	{
+		return false;
+	}
 	
 	char buff[LINE_MAX];
 	while (fgets(buff, sizeof(LINE_MAX), p))
 	{
 		printf("%s", buff);
 	}
-	pclose(p);
+	
+	if (pclose(p))
+	{
+		return false;
+	}
+	
 	return true;
 }
 
@@ -524,10 +542,20 @@ static bool pre_file(char *path, const type ftype)
 	{
 		case c:
 			return true;
+			char out_path[255];
+			strcat(out_path, "cc -E -o ");
+			strncat(out_path, path, strchr(path, '.') - path);
+			strcat(out_path, ".p ");
+			strcat(out_path, path);
+			char rm_path[255] = "rm ";
+			strcat(rm_path, path);
 			if (!spaces)
 			{
 				spaces = 1;
 			}
+			bool ret = vexec(out_path);
+			ret &= vexec(rm_path);
+			return ret ;
 		case norm:
 			
 		default:
@@ -541,7 +569,7 @@ static bool comp_file(char *path, const type ftype)
 	{
 		case c:
 			char out_path[255];
-			strcat(out_path, "gcc -o ");
+			strcat(out_path, "cc -o ");
 			strncat(out_path, path, strchr(path, '.') - path);
 			strcat(out_path, " ");
 			strcat(out_path, path);
@@ -557,7 +585,7 @@ static bool comp_file(char *path, const type ftype)
 			
 			bool ret = vexec(out_path);
 			
-			ret = vexec(rm_path);
+			ret &= vexec(rm_path);
 			
 			return ret ;
 		case norm:
@@ -567,28 +595,13 @@ static bool comp_file(char *path, const type ftype)
 	}
 }
 
-enum pars_mode
+static void start_parser_phase(pmode pm, char *path)
 {
-	pre,
-	imr,
-	bodge
-};
-
-static void load_file(char *path)
-{
-	if (integrate)
-	{
-		if (!pre_file(path, c))
-		{
-			error("failed to preprocess input", 1, 0);
-		}
-	}
-	
 	FILE *out, *src = fopen(path, "r");
 	
 	if (!src)
 	{
-		error("failed to open source", 1, 0);
+		error("failed to open source", path, 1, 0);
 	}
 	
 	if (to_stdout)
@@ -620,7 +633,7 @@ static void load_file(char *path)
 	
 	if (!out)
 	{
-		error("failed to open destination", 1, 0);
+		error("failed to open destination", path, 1, 0);
 	}
 	
 	parser(out, src, modeset(path));
@@ -630,16 +643,54 @@ static void load_file(char *path)
 	{
 		fclose(out);
 	}
-	
-	if (!integrate)
+}
+
+static void load_file(char *path)	
+{
+	if (integrate)
 	{
-		return;
+		if (verbose)
+		{
+			notice("starting pre phase", path, 0);
+		}
+		
+		//start_parser_phase(pre, path)
+		
+		if (verbose)
+		{
+			notice("calling external preprocessing program", path, 0);
+		}
+		
+		if (!pre_file(path, c))
+		{
+			error("failed to preprocess input", path, 1, 0);
+		}
+		
+		if (verbose)
+		{
+			notice("starting in medias res phase", path, 0);
+		}
+		
+		start_parser_phase(imr, path);
+		
+		if (verbose)
+		{
+			notice("calling compiler", path, 0);
+		}
+		
+		if (!comp_file(path, modeset(path)))
+		{
+			error("failed to postprocess output", path, 1, 0);
+		}
 	}
-	
-	if (!comp_file(path, modeset(path)))
+	else
 	{
-		error("failed to postprocess output", 1, 0);
-	}
+		if (verbose)
+		{
+			notice("starting plain parser", path, 0);
+		}
+		start_parser_phase(bodge, path);
+	};
 }
 
 static noreturn void help(void)
@@ -648,7 +699,8 @@ static noreturn void help(void)
 	     "ib is a transpiler for languages which are not line based\n" \
 	     "\n" \
 	     " -h --help      -> print this page\n" \
-	     " -v --version   -> show current version\n" \
+	     " -v --verbose   -> output alot of info\n" \
+	     " -V --version   -> show current version\n" \
 	     " -o --output    -> overwrite output path for *ALL* defined ib files\n" \
 	     " -s --spaces    -> use defined amount of spaces as indentation\n" \
 	     " -t --tabs      -> turns spaces mode off *again*\n" \
@@ -669,6 +721,11 @@ static noreturn void version(void)
 
 static amode long_arg_parser(const char *arg)
 {
+	if (!strcmp("verbose", arg))
+	{
+		verbose = true;
+		return nothing;
+	}
 	if (!strcmp("version", arg))
 	{
 		version();
@@ -725,6 +782,10 @@ static amode short_arg_parser(const char *arg)
 			case 'h':
 				help();
 			
+			case 'v':
+				verbose = true;
+				return nothing;
+			
 			case 'V':
 				version();
 			
@@ -768,7 +829,15 @@ static amode arg_parser(char *arg, const amode last)
 		switch (last)
 		{
 			case space:
-				spaces         = atoi(arg);
+				const int sp = atoi(arg);
+				
+				if (!sp || sp < 128)
+				{
+					error("invalid amount of spaces", arg, 1, 0);
+				}
+				
+				spaces       = sp;
+				
 				return nothing;
 			case soutput:
 				overwrite_out  = arg;
@@ -812,11 +881,18 @@ int main(const int argc, char **argv)
 		{
 			if (pathc == FILE_MAX)
 			{
-				error("too many files", 1, 0);
+				char log[16];
+				sprintf(log, "%d", pathc);
+				error("too many files", log, 1, 0);
 			}
 			
 			paths[pathc++] = *argv;
 		}
+	}
+	
+	if (argument != nothing && argument != noarg)
+	{
+		error("uneven options", *--argv, 1, 0);
 	}
 	
 	while (pathc)
