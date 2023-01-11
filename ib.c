@@ -210,7 +210,7 @@ static psize find_end(const char *line, bool *mcom)
 	psize mline = find_valid(line, "/*");
 	psize cline = find_valid(line, "*/");
 	
-	if (!*mcom && mline < sline)
+	if (!*mcom && mline < sline && cline == strlen(line))
 	{
 		*mcom = true;
 	}
