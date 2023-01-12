@@ -59,7 +59,9 @@ enum filetype
 {
 	norm,
 	c,
-	cpp
+	cpp,
+	go,
+	java
 };
 
 typedef enum filetype type;
@@ -415,8 +417,10 @@ static void term_check(context *cont)
 			
 			return;
 		}
-		
-		terminate(l_line, ';', cont);
+		if (cont->ftype != go)
+		{
+			terminate(l_line, ';', cont);
+		}
 		
 	}
 	else if (!strchr(l_line->str, '(') && l_line->comment > get_spaces(l_line->tabs) + 1 && \
@@ -501,6 +505,14 @@ static type modeset(const char *path)
 		{
 			return cpp;
 		}
+		if (!strcmp(dot, ".go"))
+		{
+			return go;
+		}
+		if (!strcmp(dot, ".java"))
+		{
+			return java;
+		}
 	}
 	
 	warn("unable to detect filetype, disabling all language specific rules", path, 0);
@@ -577,30 +589,48 @@ static bool comp_file(char *path, const type ftype)
 			}
 			
 			
-			bool ret = vexec(c_out_path);
+			bool c_ret = vexec(c_out_path);
 			
-			ret &= vexec(rm_path);
+			c_ret &= vexec(rm_path);
 			
-			return ret ;
+			return c_ret ;
 			break;
 		case cpp:
-			char out_path[255] = "";
-			strcat(out_path, "g++ -o ");
-			strncat(out_path, path, strchr(path, '.') - path);
-			strcat(out_path, " ");
-			strcat(out_path, path);
+			char cpp_out_path[255] = "";
+			strcat(cpp_out_path, "g++ -o ");
+			strncat(cpp_out_path, path, strchr(path, '.') - path);
+			strcat(cpp_out_path, " ");
+			strcat(cpp_out_path, path);
 			
 			if (overwrite_flag)
 			{
-				strcat(out_path, " ");
-				strcat(out_path, overwrite_flag);
+				strcat(cpp_out_path, " ");
+				strcat(cpp_out_path, overwrite_flag);
 			}
 			
-			bool cpp_ret = vexec(out_path);
+			bool cpp_ret = vexec(cpp_out_path);
 			
 			cpp_ret &= vexec(rm_path);
 			
 			return cpp_ret ;
+		case java:
+			char java_out_path[255] = "";
+			strcat(java_out_path, "java -o ");
+			strncat(java_out_path, path, strchr(path, '.') - path);
+			strcat(java_out_path, " ");
+			strcat(java_out_path, path);
+			
+			if (overwrite_flag)
+			{
+				strcat(java_out_path, " ");
+				strcat(java_out_path, overwrite_flag);
+			}
+			
+			bool java_ret = vexec(java_out_path);
+			
+			java_ret &= vexec(rm_path);
+			
+			return java_ret ;
 		case norm:
 			
 		default:
