@@ -3,7 +3,7 @@ PREFIX := ${HOME}
 CC := gcc
 STRIP := strip
 
-CFLAGS := -O0 -std=c11 -Wall -D_POSIX_C_SOURCE -g
+CFLAGS := -O0 -std=c11 -Wall -g
 LDFLAGS :=
 
 STRIPFLAGS := --strip-all -R .comment -x

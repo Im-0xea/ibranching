@@ -26,10 +26,7 @@
 #include <string.h>
 #include <unistd.h>
 
-// don't fucking ask
-#ifdef __APPLE__
-	FILE *popen(const char *command, const char *mode)
-	int  pclose(FILE *stream)
+
 #define noreturn _Noreturn
 
 typedef unsigned short psize
@@ -56,6 +53,7 @@ typedef struct line_type line_t
 enum filetype
 	norm
 	c
+	cpp
 
 typedef enum filetype type
 
@@ -361,7 +359,7 @@ static type modeset(const char *path)
 		if (!strcmp(dot, ".c")   || !strcmp(dot, ".h"))
 			return c
 		if (!strcmp(dot, ".cpp") || !strcmp(dot, ".hpp"))
-			return c
+			return cpp
 	
 	warn("unable to detect filetype, disabling all language specific rules", path, 0)
 	return norm
@@ -403,10 +401,30 @@ static bool pre_file(char *path, const type ftype)
 			return false
 
 static bool comp_file(char *path, const type ftype)
+	char rm_path[255] = "rm "
+	strcat(rm_path, path)
 	switch (ftype)
 		case c:
+			char c_out_path[255] = ""
+			strcat(c_out_path, "gcc -o ")
+			strncat(c_out_path, path, strchr(path, '.') - path)
+			strcat(c_out_path, " ")
+			strcat(c_out_path, path)
+			
+			if (overwrite_flag)
+				strcat(c_out_path, " ")
+				strcat(c_out_path, overwrite_flag)
+			
+			
+			bool ret = vexec(c_out_path)
+			
+			ret &= vexec(rm_path)
+			
+			return ret 
+			break
+		case cpp:
 			char out_path[255] = ""
-			strcat(out_path, "gcc -o ")
+			strcat(out_path, "g++ -o ")
 			strncat(out_path, path, strchr(path, '.') - path)
 			strcat(out_path, " ")
 			strcat(out_path, path)
@@ -415,14 +433,11 @@ static bool comp_file(char *path, const type ftype)
 				strcat(out_path, " ")
 				strcat(out_path, overwrite_flag)
 			
-			char rm_path[255] = "rm "
-			strcat(rm_path, path)
+			bool cpp_ret = vexec(out_path)
 			
-			bool ret = vexec(out_path)
+			cpp_ret &= vexec(rm_path)
 			
-			ret &= vexec(rm_path)
-			
-			return ret 
+			return cpp_ret 
 		case norm:
 			
 		default:
