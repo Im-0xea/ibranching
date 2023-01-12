@@ -123,6 +123,9 @@ this transpiler is originally only intended for C, it supports even advanced c s
 - CPP:
 While cpp also works pretty well, I do not intend to build extra features for it, its syntax is nearly the same as c, basically all usual language features should be functional, some typical syntactics like putting template declarations in a seperate line need to be avoided or manually done by using backslashes
 
+- JAVA:
+Im not a big fan of this one, but as I have been forced to using it at times, yes ib "supports" java, I in no way intend to maintain advanced syntax features
+
 ### Editors
 
 looks best with a smaller tab size, using spaces as tabs is supported by a special flag but not recommended.
