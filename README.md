@@ -1,12 +1,10 @@
 # Indentation-Branching
 
-A transpiler for c-style languages allowing you to forego the usage of curlybraces, semicolons, in case of enums and initialisation lists, commas and for preprocessor branching "#endif" by parsing the identation, newlines and some added language specifics.
+A transpiler for non line-based programming languages allowing you to write code without line independent symbols like ";{},", by parsing indentation, newlines and in outsider cases keywords
 
-This reduces unnecessary complexity as most of us implicitly use this format while writing code, and only add these symbols because the language requires it.
+This drastically reduces code size(by 40% in length and 10% in filesize, on ib itself), makes code easier to write, and in my opinion encurages good code formating
 
-One of the most common issues in c-style languages is missing semicolons and the endless debate where to put the braces.
-
-IB is written in its own input, it is approximately 60% of the length of its transpiled c counterpart and 90% of the file size.
+It also gets rid of the where to put the braces dicotomy, which plague tradition programming syntax aswell as the common mistake of missing semicolons
 
 ### Example
 
