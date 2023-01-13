@@ -10,13 +10,13 @@ STRIPFLAGS := --strip-all -R .comment -x
 
 all:
 	rm ib
-	ib ib.c.ib -i --flags "$(CFLAGS) $(LDFLAGS)"
+	ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
 
 install:
 	cp ib ${PREFIX}/bin/
 
 test: all
-	./ib ib.c.ib -i --flags "$(CFLAGS) $(LDFLAGS)"
+	./ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
 	make -C testing
 
 sa:
