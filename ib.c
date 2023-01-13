@@ -15,11 +15,7 @@
 #define CONT_MAX 256
 #define FILE_MAX 256
 
-#include <limits.h>
-
-#ifndef LINE_MAX
-	#define LINE_MAX 2048
-#endif
+#define LINE_MAX 8000
 
 
 #include <stdio.h>
@@ -155,7 +151,7 @@ static void faulter(const char *label, const color col, const char *msg, const c
 		char locs[16];
 		sprintf(locs, "%d", loc);
 		msg_out(5, label, typ, msg, "at line", locs);
-	};
+	}
 	
 	set_color(blank);
 }
@@ -287,18 +283,19 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 static bool check_word(const char *line, const char *word, const char *stop)
 {
 	char line_cpy[LINE_MAX];
+	const char *stop_cpy = line_cpy + (stop - line);
 	strcpy(line_cpy, line);
 	
-	char *tok  = strtok(line_cpy, " \t");
+	char *tok  = strtok(line_cpy, " \t\n");
 	
-	while (tok && (!stop ||tok <= stop))
+	while (tok && (!stop ||tok <= stop_cpy))
 	{
 		if (!strcmp(tok, word))
 		{
 			return true;
 		}
 		
-		tok = strtok(NULL, " \t");
+		tok = strtok(NULL, " \t\n");
 		
 	}
 	return false;
@@ -343,7 +340,7 @@ static void branch_check(char *out, context *cont)
 	else
 	{
 		out[0] = '\n';
-	};
+	}
 	++out;
 	while (tar != *tabs)
 	{
@@ -389,7 +386,7 @@ static void branch_check(char *out, context *cont)
 				else
 				{
 					brackinate(&out, *tabs - dec, "};", true);
-				};
+				}
 				--cont->tbranchc;
 				continue;
 			}
@@ -518,12 +515,12 @@ static void parser(FILE *out, FILE *src, const type ftype)
 			else
 			{
 				fputc('\n', out);
-			};
+			}
 		}
 		else
 		{
 			fputc('\n', out);
-		};
+		}
 		
 		if (!cond)
 		{
@@ -737,10 +734,10 @@ static void start_parser_phase(pmode pm, char *path)
 		{
 			strncpy(out_path, path, strrchr(path,'.') - path);
 			path[strrchr(path, '.') - path] = '\0';
-		};
+		}
 		
 		out = fopen(path, "w");
-	};
+	}
 	
 	if (!out)
 	{
@@ -801,7 +798,7 @@ static void load_file(char *path)
 			notice("starting plain parser", path, 0);
 		}
 		start_parser_phase(bodge, path);
-	};
+	}
 }
 
 static noreturn void help(void)
