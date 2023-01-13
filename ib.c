@@ -602,94 +602,47 @@ static bool pre_file(char *path, const type ftype)
 			return false;
 	}
 }
+static bool call_comp(const char *path, const char *std_comp, const bool adpr)
+{
+	char out_path[255] = "";
+	strcat(out_path, std_comp);
+	if (adpr)
+	{
+		strncat(out_path, path, strchr(path, '.') - path);
+		strcat(out_path, " ");
+	}
+	strcat(out_path, path);
+	
+	if (overwrite_flag)
+	{
+		strcat(out_path, " ");
+		strcat(out_path, overwrite_flag);
+	}
+	
+	
+	bool ret = vexec(out_path);
+	if (clean && ret)
+	{
+		char rm_path[255] = "rm ";
+		strcat(rm_path, path);
+		ret &= vexec(rm_path);
+	}
+	
+	return ret ;
+}
 
 static bool comp_file(char *path, const type ftype)
 {
-	char rm_path[255] = "rm ";
-	strcat(rm_path, path);
 	switch (ftype)
 	{
 		case c:
-			char c_out_path[255] = "";
-			strcat(c_out_path, "gcc -o ");
-			strncat(c_out_path, path, strchr(path, '.') - path);
-			strcat(c_out_path, " ");
-			strcat(c_out_path, path);
-			
-			if (overwrite_flag)
-			{
-				strcat(c_out_path, " ");
-				strcat(c_out_path, overwrite_flag);
-			}
-			
-			
-			bool c_ret = vexec(c_out_path);
-			if (clean)
-			{
-				c_ret &= vexec(rm_path);
-			}
-			
-			return c_ret ;
-			break;
+			return call_comp(path, "gcc -o ", true);
 		case cpp:
-			char cpp_out_path[255] = "";
-			strcat(cpp_out_path, "g++ -o ");
-			strncat(cpp_out_path, path, strchr(path, '.') - path);
-			strcat(cpp_out_path, " ");
-			strcat(cpp_out_path, path);
-			
-			if (overwrite_flag)
-			{
-				strcat(cpp_out_path, " ");
-				strcat(cpp_out_path, overwrite_flag);
-			}
-			
-			bool cpp_ret = vexec(cpp_out_path);
-			
-			if (clean)
-			{
-				cpp_ret &= vexec(rm_path);
-			}
-			
-			return cpp_ret ;
+			return call_comp(path, "g++ -o ", true);
 		case java:
-			char java_out_path[255] = "";
-			strcat(java_out_path, "javac ");
-			strcat(java_out_path, path);
-			
-			if (overwrite_flag)
-			{
-				strcat(java_out_path, " ");
-				strcat(java_out_path, overwrite_flag);
-			}
-			
-			bool java_ret = vexec(java_out_path);
-			
-			if (clean)
-			{
-				java_ret &= vexec(rm_path);
-			}
-			
-			return java_ret ;
+			return call_comp(path, "javac ", false);
 		case go:
-			char go_out_path[255] = "";
-			strcat(go_out_path, "go build ");
-			strcat(go_out_path, path);
-			
-			if (overwrite_flag)
-			{
-				strcat(go_out_path, " ");
-				strcat(go_out_path, overwrite_flag);
-			}
-			
-			bool go_ret = vexec(go_out_path);
-			
-			if (clean)
-			{
-				go_ret &= vexec(rm_path);
-			}
-			
-			return go_ret ;
+			return call_comp(path, "go build ", false);
 		case norm:
 			
 		default:
