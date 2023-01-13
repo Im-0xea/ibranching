@@ -236,14 +236,11 @@ static void brackinate(char **outp, const psize tabs, const char *br, const bool
 	psize t = 0
 	
 	if (nl)
-		out[t++] = '\n'
-		while(!spaces && t <= tabs)
+		while(!spaces && t < tabs)
 			out[t++] = '\t'
 		
-		while(spaces && t <= get_spaces(tabs))
+		while(spaces && t < get_spaces(tabs))
 			out[t++] = ' '
-	else
-		out[t++] = ' '
 	out[t] = '\0'
 	
 	strcat(out, br)
@@ -257,7 +254,11 @@ static void branch_check(char *out, context *cont)
 	const psize tar   = cont->line.tabs
 	const char  dir   = tar < *tabs ? -1 : (*tabs < tar ? 1 : 0)
 	const psize dec   = dir == 1 ? 1 : 0
-	
+	if (cont->ftype == go && dir == 1)
+		out[0] = ' '
+	else
+		out[0] = '\n'
+	++out
 	while (tar != *tabs)
 		*tabs += (psize) dir
 		
@@ -360,8 +361,7 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		fprintf(out, "%s", l_line->str)
 		
 		if (line->comment != 0 || l_line->comment != 0)
-			char branch_line[LINE_MAX]
-			branch_line[0] = '\0'
+			char branch_line[LINE_MAX] = ""
 			branch_check(branch_line, &cont)
 			if (branch_line[0] != '\0')
 				fputs(branch_line, out)
