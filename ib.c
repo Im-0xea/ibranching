@@ -248,7 +248,6 @@ static void strip_newline(char *str)
 	{
 		str[strlen(str) - 1] = '\0';
 	}
-
 }
 
 static void strip_line(const char *in, char *str)
@@ -312,22 +311,16 @@ static void brackinate(char **outp, const psize tabs, const char *br, const bool
 	
 	if (nl)
 	{
-		out[t++] = '\n';
-		while(!spaces && t <= tabs)
+		while(!spaces && t < tabs)
 		{
 			out[t++] = '\t';
 		}
 		
-		while(spaces && t <= get_spaces(tabs))
+		while(spaces && t < get_spaces(tabs))
 		{
 			out[t++] = ' ';
 		}
-
 	}
-	else
-	{
-		out[t++] = ' ';
-	};
 	out[t] = '\0';
 	
 	strcat(out, br);
@@ -343,7 +336,15 @@ static void branch_check(char *out, context *cont)
 	const psize tar   = cont->line.tabs;
 	const char  dir   = tar < *tabs ? -1 : (*tabs < tar ? 1 : 0);
 	const psize dec   = dir == 1 ? 1 : 0;
-	
+	if (cont->ftype == go && dir == 1)
+	{
+		out[0] = ' ';
+	}
+	else
+	{
+		out[0] = '\n';
+	};
+	++out;
 	while (tar != *tabs)
 	{
 		*tabs += (psize) dir;
@@ -355,7 +356,6 @@ static void branch_check(char *out, context *cont)
 				--cont->fmsgsc;
 				brackinate(&out, *tabs - dec, cont->fmsgss[cont->fmsgsc], !(cont->ftype == go));
 			}
-
 		}
 		if (cont->bmsgsc && cont->bmsgst[cont->bmsgsc - 1] == *tabs - dec)
 		{
@@ -370,7 +370,6 @@ static void branch_check(char *out, context *cont)
 				{
 					brackinate(&out, *tabs - dec, cont->bmsgss[cont->bmsgsc], true);
 				}
-
 			}
 			continue;
 		}
@@ -394,7 +393,6 @@ static void branch_check(char *out, context *cont)
 				--cont->tbranchc;
 				continue;
 			}
-
 		}
 		
 		if (cont->nbranchc && cont->nbranchs[cont->nbranchc - 1] == *tabs - dec)
@@ -408,7 +406,6 @@ static void branch_check(char *out, context *cont)
 		
 		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1));
 	}
-
 }
 
 static void terminate(line_t *line, const char tchar, context *cont)
@@ -479,9 +476,7 @@ static void term_check(context *cont)
 		{
 			cont->tbranchs[cont->tbranchc++] = l_line->tabs;
 		}
-
 	}
-
 }
 
 static void parser(FILE *out, FILE *src, const type ftype)
@@ -514,8 +509,7 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		
 		if (line->comment != 0 || l_line->comment != 0)
 		{
-			char branch_line[LINE_MAX];
-			branch_line[0] = '\0';
+			char branch_line[LINE_MAX] = "";
 			branch_check(branch_line, &cont);
 			if (branch_line[0] != '\0')
 			{
@@ -525,7 +519,6 @@ static void parser(FILE *out, FILE *src, const type ftype)
 			{
 				fputc('\n', out);
 			};
-
 		}
 		else
 		{
@@ -539,7 +532,6 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		
 		transfere_line(l_line, line);
 	}
-
 }
 
 static type modeset(const char *path)
@@ -564,7 +556,6 @@ static type modeset(const char *path)
 		{
 			return java;
 		}
-
 	}
 	
 	warn("unable to detect filetype, disabling all language specific rules", path, 0);
@@ -619,7 +610,6 @@ static bool pre_file(char *path, const type ftype)
 		default:
 			return false;
 	}
-
 }
 
 static bool comp_file(char *path, const type ftype)
@@ -714,7 +704,6 @@ static bool comp_file(char *path, const type ftype)
 		default:
 			return false;
 	}
-
 }
 
 static void start_parser_phase(pmode pm, char *path)
@@ -765,7 +754,6 @@ static void start_parser_phase(pmode pm, char *path)
 	{
 		fclose(out);
 	}
-
 }
 
 static void load_file(char *path)	
@@ -805,7 +793,6 @@ static void load_file(char *path)
 		{
 			error("failed to postprocess output", path, 1, 0);
 		}
-
 	}
 	else
 	{
@@ -815,7 +802,6 @@ static void load_file(char *path)
 		}
 		start_parser_phase(bodge, path);
 	};
-
 }
 
 static noreturn void help(void)
@@ -994,7 +980,6 @@ static amode arg_parser(char *arg, const amode last)
 			case noarg:
 				return noarg;
 		}
-
 	}
 	
 	if (arg[1] == '-')
@@ -1031,7 +1016,6 @@ int main(const int argc, char **argv)
 			
 			paths[pathc++] = *argv;
 		}
-
 	}
 	
 	if (argument != nothing && argument != noarg)
