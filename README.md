@@ -108,7 +108,7 @@ int main()
 ~~~
 $ make
 
-$ make test (transpiles itself to ensure that you are not installing a faulty build)
+$ make test (transpiles itself + some torture tests, to ensure that you are not installing a faulty build)
 
 (root) $ make install
 ~~~
