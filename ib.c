@@ -108,6 +108,7 @@ typedef enum pars_mode pmode;
 psize spaces          = 0;
 bool  to_stdout       = false;
 bool  integrate       = false;
+bool  clean           = true;
 bool  verbose         = false;
 char  *overwrite_out  = NULL;
 char  *overwrite_comp = NULL;
@@ -620,8 +621,10 @@ static bool comp_file(char *path, const type ftype)
 			
 			
 			bool c_ret = vexec(c_out_path);
-			
-			c_ret &= vexec(rm_path);
+			if (clean)
+			{
+				c_ret &= vexec(rm_path);
+			}
 			
 			return c_ret ;
 			break;
@@ -640,7 +643,10 @@ static bool comp_file(char *path, const type ftype)
 			
 			bool cpp_ret = vexec(cpp_out_path);
 			
-			cpp_ret &= vexec(rm_path);
+			if (clean)
+			{
+				cpp_ret &= vexec(rm_path);
+			}
 			
 			return cpp_ret ;
 		case java:
@@ -656,7 +662,10 @@ static bool comp_file(char *path, const type ftype)
 			
 			bool java_ret = vexec(java_out_path);
 			
-			java_ret &= vexec(rm_path);
+			if (clean)
+			{
+				java_ret &= vexec(rm_path);
+			}
 			
 			return java_ret ;
 		case go:
@@ -672,7 +681,10 @@ static bool comp_file(char *path, const type ftype)
 			
 			bool go_ret = vexec(go_out_path);
 			
-			go_ret &= vexec(rm_path);
+			if (clean)
+			{
+				go_ret &= vexec(rm_path);
+			}
 			
 			return go_ret ;
 		case norm:
@@ -796,6 +808,7 @@ static noreturn void help(void)
 	     " -s --spaces    -> use defined amount of spaces as indentation\n" \
 	     " -t --tabs      -> turns spaces mode off *again*\n" \
 	     " -i --integrate -> enable pre/post processing\n" \
+	     " -n --noclean   -> keep files after processing\n" \
 	     " -c --compiler  -> manually set compiler\n" \
 	     " -f --flags     -> add compiler flags\n" \
 	     " -S --stdout    -> output to stdout instead of file");
@@ -849,6 +862,18 @@ static amode long_arg_parser(const char *arg)
 		return soutput;
 	}
 	
+	if (!strcmp("integrate", arg))
+	{
+		integrate = true;
+		return nothing;
+	}
+	
+	if (!strcmp("noclean", arg))
+	{
+		clean = false;
+		return nothing;
+	}
+	
 	if (!strcmp("compiler", arg))
 	{
 		return scomp;
@@ -890,6 +915,10 @@ static amode short_arg_parser(const char *arg)
 				to_stdout = true;
 				return nothing;
 			
+			case 'n':
+				clean = false;
+				break;
+			
 			case 'c':
 				return scomp;
 			
@@ -898,7 +927,7 @@ static amode short_arg_parser(const char *arg)
 			
 			case 'i':
 				integrate = true;
-				return nothing;
+				break;
 			
 			default :
 				char invalid[1];
