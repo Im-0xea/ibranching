@@ -236,14 +236,19 @@ static psize get_spaces(const psize tab)
 	return spaces == 0 ? tab : tab * spaces;
 }
 
-static void strip_line(const char *in, char *str)
+static void strip_newline(char *str)
 {
-	strcpy(str, in + get_tabs(in));
-	
 	if (str[strlen(str) - 1] == '\n')
 	{
 		str[strlen(str) - 1] = '\0';
 	}
+}
+
+static void strip_line(const char *in, char *str)
+{
+	strcpy(str, in + get_tabs(in));
+	
+	strip_newline(str);
 }
 
 static bool get_line(line_t *line, FILE *file, bool *mcom)
@@ -311,21 +316,25 @@ static void terminate(line_t *line, const char tchar, context *cont)
 	line->str[line->comment - 1] = tchar;
 }
 
-static void brackinate(char **outp, const psize tabs, const char *br)
+static void brackinate(char **outp, const psize tabs, const char *br, const type ftype)
 {
 	char *out = *outp;
 	psize t = 0;
 	
-	while(!spaces && t < tabs)
+	if (ftype != go)
 	{
-		out[t] = '\t';
-		++t;
+		out[t++] = '\n';
+		while(!spaces && t <= tabs)
+		{
+			out[t++] = '\t';
+		}
 	}
 	
-	while(spaces && t < get_spaces(tabs))
 	{
-		out[t] = ' ';
-		++t;
+		while(spaces && t <= get_spaces(tabs))
+		{
+			out[t++] = ' ';
+		}
 	}
 	
 	out[t] = '\0';
@@ -359,7 +368,7 @@ static void branch_check(char *out, context *cont)
 				    strncmp(line + get_spaces(*tabs), "#elifndef", 9) && \
 				    strncmp(line + get_spaces(*tabs), "#else", 5))
 				{
-					brackinate(&out, *tabs - dec, cont->bmsgss[cont->bmsgsc]);
+					brackinate(&out, *tabs - dec, cont->bmsgss[cont->bmsgsc], cont->ftype);
 				}
 			}
 			continue;
@@ -373,7 +382,7 @@ static void branch_check(char *out, context *cont)
 			}
 			if (cont->tbranchc && cont->tbranchs[cont->tbranchc - 1] == *tabs)
 			{
-				brackinate(&out, *tabs - dec, "};");
+				brackinate(&out, *tabs - dec, "};", cont->ftype);
 				--cont->tbranchc;
 				continue;
 			}
@@ -388,7 +397,7 @@ static void branch_check(char *out, context *cont)
 			continue;
 		}
 		
-		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}");
+		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", cont->ftype);
 	}
 }
 
@@ -468,8 +477,8 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		{
 			term_check(&cont);
 		}
-		
-		fputs(l_line->str, out);
+		strip_newline(l_line->str);
+		fprintf(out, "%s", l_line->str);
 		
 		if (line->comment != 0)
 		{
@@ -479,6 +488,10 @@ static void parser(FILE *out, FILE *src, const type ftype)
 			if (branch_line[0] != '\0')
 			{
 				fputs(branch_line, out);
+			}
+			else
+			{
+				fputc('\n', out);
 			}
 		}
 		
@@ -629,6 +642,22 @@ static bool comp_file(char *path, const type ftype)
 			java_ret &= vexec(rm_path);
 			
 			return java_ret ;
+		case go:
+			char go_out_path[255] = "";
+			strcat(go_out_path, "go build ");
+			strcat(go_out_path, path);
+			
+			if (overwrite_flag)
+			{
+				strcat(go_out_path, " ");
+				strcat(go_out_path, overwrite_flag);
+			}
+			
+			bool go_ret = vexec(go_out_path);
+			
+			go_ret &= vexec(rm_path);
+			
+			return go_ret ;
 		case norm:
 			
 		default:

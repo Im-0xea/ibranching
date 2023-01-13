@@ -1,4 +1,4 @@
-PREFIX := /usr
+PREFIX := ${HOME}
 
 CC := gcc
 STRIP := strip

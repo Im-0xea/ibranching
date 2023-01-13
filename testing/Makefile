@@ -8,3 +8,6 @@ test:
 	../ib hello.java.ib -i
 	java hello
 	rm hello.class
+	../ib hello.go.ib -i
+	./hello
+	rm hello
