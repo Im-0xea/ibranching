@@ -166,7 +166,7 @@ static psize find_valid(const char *line, const char *tok)
 	if (!ptr)
 		return strlen(line)
 	
-	return (psize) (ptr - line)
+	return (psize) (ptr - line + 1)
 
 static psize find_end(const char *line, bool *mcom)
 	psize sline = find_valid(line, "//")
@@ -231,18 +231,6 @@ static bool check_word(const char *line, const char *word, const char *stop)
 	
 	return false
 
-static void terminate(line_t *line, const char tchar, context *cont)
-	if (line->comment <= get_spaces(line->tabs) + 1)
-		return
-	
-	if (line->str[line->comment - 2] == ';')
-		char log[LINE_MAX]
-		strip_line(line->str, log)
-		warn("line is already terminated ", log, cont->gloc - 1)
-	
-	memmove(line->str + line->comment, line->str + line->comment - 1, strlen(line->str + line->comment - 2))
-	line->str[line->comment - 1] = tchar
-
 static void brackinate(char **outp, const psize tabs, const char *br, const bool nl)
 	char *out = *outp
 	psize t = 0
@@ -292,7 +280,10 @@ static void branch_check(char *out, context *cont)
 			if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs)
 				--cont->ctermc
 			if (cont->tbranchc && cont->tbranchs[cont->tbranchc - 1] == *tabs)
-				brackinate(&out, *tabs - dec, "};", true)
+				if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs)
+					brackinate(&out, *tabs - dec, "},", true)
+				else
+					brackinate(&out, *tabs - dec, "};", true)
 				--cont->tbranchc
 				continue
 		
@@ -302,6 +293,18 @@ static void branch_check(char *out, context *cont)
 			continue
 		
 		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1))
+
+static void terminate(line_t *line, const char tchar, context *cont)
+	if (line->comment <= get_spaces(line->tabs) + 1)
+		return
+	
+	if (line->str[line->comment - 2] == ';')
+		char log[LINE_MAX]
+		strip_line(line->str, log)
+		warn("line is already terminated ", log, cont->gloc - 1)
+	
+	memmove(line->str + line->comment, line->str + line->comment - 1, strlen(line->str + line->comment - 2))
+	line->str[line->comment - 1] = tchar
 
 static void term_check(context *cont)
 	line_t *line = &cont->line
@@ -331,8 +334,8 @@ static void term_check(context *cont)
 		if (l_line->str[l_line->comment - 2] == '=' || \
 		    check_word(l_line->str, "enum", l_line->str + l_line->comment))
 			cont->cterms[cont->ctermc++] = l_line->tabs
-		
-		cont->tbranchs[cont->tbranchc++] = l_line->tabs
+		if (!check_word(l_line->str, "typedef", l_line->str + l_line->comment))
+			cont->tbranchs[cont->tbranchc++] = l_line->tabs
 
 static void parser(FILE *out, FILE *src, const type ftype)
 	context cont =
@@ -356,7 +359,7 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		strip_newline(l_line->str)
 		fprintf(out, "%s", l_line->str)
 		
-		if (line->comment != 0)
+		if (line->comment != 0 || l_line->comment != 0)
 			char branch_line[LINE_MAX]
 			branch_line[0] = '\0'
 			branch_check(branch_line, &cont)
@@ -364,6 +367,8 @@ static void parser(FILE *out, FILE *src, const type ftype)
 				fputs(branch_line, out)
 			else
 				fputc('\n', out)
+		else
+			fputc('\n', out)
 		
 		if (!cond)
 			break
