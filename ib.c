@@ -30,7 +30,7 @@
 
 typedef unsigned short psize;
 
-enum ansi_color
+typedef enum ansi_color
 {
 	blank   = 0,
 	red     = 31,
@@ -40,31 +40,28 @@ enum ansi_color
 	magenta = 35,
 	cyan    = 36,
 	white   = 37
-};
+}
+color;
 
-typedef enum ansi_color color;
-
-struct line_type
+typedef struct line_type
 {
 	psize comment;
 	psize tabs;
 	char  str[LINE_MAX];
-};
+}
+line_t;
 
-typedef struct line_type line_t;
-
-enum filetype
+typedef enum filetype
 {
 	norm,
 	c,
 	cpp,
 	go,
 	java
-};
+}
+type;
 
-typedef enum filetype type;
-
-struct parser_context
+typedef struct parser_context
 {
 	const type ftype;
 	bool       mcom;
@@ -83,11 +80,10 @@ struct parser_context
 	char       fmsgss[CONT_MAX][LINE_MAX];
 	line_t     line;
 	line_t     l_line;
-};
+}
+context;
 
-typedef struct parser_context context;
-
-enum arg_mode
+typedef enum arg_mode
 {
 	noarg,
 	nothing,
@@ -95,18 +91,16 @@ enum arg_mode
 	soutput,
 	scomp,
 	sflags
-};
+}
+amode;
 
-typedef enum arg_mode amode;
-
-enum pars_mode
+typedef enum pars_mode
 {
 	pre,
 	imr,
 	bodge
-};
-
-typedef enum pars_mode pmode;
+}
+pmode;
 
 
 psize spaces          = 0;
