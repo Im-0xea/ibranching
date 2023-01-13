@@ -14,7 +14,7 @@ all:
 install:
 	cp ib ${PREFIX}/bin/
 
-test: all
+test:
 	./ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
 	make -C testing
 
@@ -23,7 +23,7 @@ sa:
 	frama-c ib.c -c11
 
 clean:
-	rm ib
+	rm -f *.c testing/*.c
 
 bootstrap:
 	$(CC) ib.c -o ib $(CFLAGS) $(LDFLAGS)
