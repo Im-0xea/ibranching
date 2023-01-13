@@ -47,7 +47,7 @@ int main()
 ```
 
 ```
-$ ib example.c.ib --spaces 4 (note: this flag is only required for people who use spaces to indent)
+$ ib example.c.ib --spaces 4 (note: this flag is only required if you use spaces to indent)
 ```
 
 ```c
