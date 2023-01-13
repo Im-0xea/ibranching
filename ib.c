@@ -1,5 +1,13 @@
-/*                                *  *   ib (indentation branching)   *  *                                */
-/* todo: *   -experiment with preprocessing before parsing *   -write typedef parser *   -fix multiline go include *   -fix anonymous go function */
+/*                                * 
+ *   ib (indentation branching)   * 
+ *                                */
+
+/* todo:
+ *   -experiment with preprocessing before parsing
+ *   -write typedef parser
+ *   -fix multiline go include
+ *   -fix anonymous go function
+ */
 
 
 #define VERSION "0.12"
@@ -198,7 +206,7 @@ static psize find_valid(const char *line, const char *tok)
 		return strlen(line);
 	}
 	
-	return (psize) (ptr - line);
+	return (psize) (ptr - line + 1);
 }
 
 static psize find_end(const char *line, bool *mcom)
@@ -393,7 +401,14 @@ static void branch_check(char *out, context *cont)
 			}
 			if (cont->tbranchc && cont->tbranchs[cont->tbranchc - 1] == *tabs)
 			{
-				brackinate(&out, *tabs - dec, "};", true);
+				if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs)
+				{
+					brackinate(&out, *tabs - dec, "},", true);
+				}
+				else
+				{
+					brackinate(&out, *tabs - dec, "};", true);
+				}
 				--cont->tbranchc;
 				continue;
 			}
@@ -460,8 +475,11 @@ static void term_check(context *cont)
 		{
 			cont->cterms[cont->ctermc++] = l_line->tabs;
 		}
-		
-		cont->tbranchs[cont->tbranchc++] = l_line->tabs;
+		if (!check_word(l_line->str, "typedef", l_line->str + l_line->comment))
+		{
+			cont->tbranchs[cont->tbranchc++] = l_line->tabs;
+		}
+
 	}
 
 }
@@ -494,7 +512,7 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		strip_newline(l_line->str);
 		fprintf(out, "%s", l_line->str);
 		
-		if (line->comment != 0)
+		if (line->comment != 0 || l_line->comment != 0)
 		{
 			char branch_line[LINE_MAX];
 			branch_line[0] = '\0';
@@ -508,6 +526,10 @@ static void parser(FILE *out, FILE *src, const type ftype)
 				fputc('\n', out);
 			}
 
+		}
+		else
+		{
+			fputc('\n', out);
 		}
 		
 		if (!cond)
