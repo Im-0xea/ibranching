@@ -115,17 +115,21 @@ $ make test (transpiles itself + some torture tests, to ensure that you are not 
 
 ### Languages
 
-- C:
-this transpiler is originally only intended for C, it supports even advanced c syntactical features and Im currently working to intigrate ib into the c compilation process in medias res
+C:
 
-- CPP:
-While cpp also works pretty well, I do not intend to build extra features for it, its syntax is nearly the same as c, basically all usual language features should be functional, some typical syntactics like putting template declarations in a seperate line need to be avoided or manually done by using backslashes
+this transpiler is originally intended for C and is written in it, therefore it has quite decent C support, also Im currently working to intigrate ib into the c compilation process in medias res, by running a lightweight parser for preprocessor statements, then calling the c preprocessor followed by a call to the main parser stage to actually ib the code, this would make all ib-c alot more ridgit as some features rely on keywords which can be altered by macros and defines.
 
-- GO:
-While im not sure as to how well ib will intigrate with go as I don't use it alot, for now it seams functional, mind you I have already had to set an exception because go is actually a line based language in sheeps clothing
+C++:
 
-- JAVA:
-Im not a big fan of this one, but as I have been forced to using it at times, yes ib "supports" java, I in no way intend to maintain advanced syntax features
+cpp also works pretty well, its syntax is nearly the same as c, basically all usual language features are functional, some typical practices like putting template declarations in a seperate line need to be avoided or manually fixed by using backslashes
+
+go:
+
+work in progress, only barebones
+
+java:
+
+seams to work fine, im not that aware of it special cases though
 
 ### Editors
 
