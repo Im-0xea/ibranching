@@ -1,4 +1,4 @@
-PREFIX := ${HOME}
+PREFIX := /usr
 
 CC := gcc
 STRIP := strip
@@ -9,7 +9,6 @@ LDFLAGS :=
 STRIPFLAGS := --strip-all -R .comment -x
 
 all:
-	rm ib
 	ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
 
 install:

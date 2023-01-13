@@ -155,7 +155,7 @@ static void faulter(const char *label, const color col, const char *msg, const c
 		char locs[16];
 		sprintf(locs, "%d", loc);
 		msg_out(5, label, typ, msg, "at line", locs);
-	}
+	};
 	
 	set_color(blank);
 }
@@ -188,11 +188,11 @@ static psize find_valid(const char *line, const char *tok)
 {
 	char *ptf = strchr(line, '"');
 	char *ptr = strstr(line, tok);
-	bool open = true;
+	bool open = false;
 	
-	while (ptf && !(open && ptf > ptr))
+	while (ptf && ptr)
 	{
-		if (open)
+		if (open && ptf > ptr)
 		{
 			ptr = strstr(ptr + 1, tok);
 		}
@@ -290,7 +290,7 @@ static bool check_word(const char *line, const char *word, const char *stop)
 	char line_cpy[LINE_MAX];
 	strcpy(line_cpy, line);
 	
-	char *tok  = strtok(line_cpy, " \t\n");
+	char *tok  = strtok(line_cpy, " \t");
 	
 	while (tok && (!stop ||tok <= stop))
 	{
@@ -299,28 +299,10 @@ static bool check_word(const char *line, const char *word, const char *stop)
 			return true;
 		}
 		
-		tok = strtok(NULL, word);
+		tok = strtok(NULL, " \t");
+		
 	}
-	
 	return false;
-}
-
-static void terminate(line_t *line, const char tchar, context *cont)
-{
-	if (line->comment <= get_spaces(line->tabs) + 1)
-	{
-		return;
-	}
-	
-	if (line->str[line->comment - 2] == ';')
-	{
-		char log[LINE_MAX];
-		strip_line(line->str, log);
-		warn("line is already terminated ", log, cont->gloc - 1);
-	}
-	
-	memmove(line->str + line->comment, line->str + line->comment - 1, strlen(line->str + line->comment - 2));
-	line->str[line->comment - 1] = tchar;
 }
 
 static void brackinate(char **outp, const psize tabs, const char *br, const bool nl)
@@ -345,7 +327,7 @@ static void brackinate(char **outp, const psize tabs, const char *br, const bool
 	else
 	{
 		out[t++] = ' ';
-	}
+	};
 	out[t] = '\0';
 	
 	strcat(out, br);
@@ -401,14 +383,14 @@ static void branch_check(char *out, context *cont)
 			}
 			if (cont->tbranchc && cont->tbranchs[cont->tbranchc - 1] == *tabs)
 			{
-				if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs)
+				if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs - 1)
 				{
 					brackinate(&out, *tabs - dec, "},", true);
 				}
 				else
 				{
 					brackinate(&out, *tabs - dec, "};", true);
-				}
+				};
 				--cont->tbranchc;
 				continue;
 			}
@@ -427,6 +409,24 @@ static void branch_check(char *out, context *cont)
 		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1));
 	}
 
+}
+
+static void terminate(line_t *line, const char tchar, context *cont)
+{
+	if (line->comment <= get_spaces(line->tabs) + 1)
+	{
+		return;
+	}
+	
+	if (line->str[line->comment - 2] == ';')
+	{
+		char log[LINE_MAX];
+		strip_line(line->str, log);
+		warn("line is already terminated ", log, cont->gloc - 1);
+	}
+	
+	memmove(line->str + line->comment, line->str + line->comment - 1, strlen(line->str + line->comment - 2));
+	line->str[line->comment - 1] = tchar;
 }
 
 static void term_check(context *cont)
@@ -524,13 +524,13 @@ static void parser(FILE *out, FILE *src, const type ftype)
 			else
 			{
 				fputc('\n', out);
-			}
+			};
 
 		}
 		else
 		{
 			fputc('\n', out);
-		}
+		};
 		
 		if (!cond)
 		{
@@ -748,10 +748,10 @@ static void start_parser_phase(pmode pm, char *path)
 		{
 			strncpy(out_path, path, strrchr(path,'.') - path);
 			path[strrchr(path, '.') - path] = '\0';
-		}
+		};
 		
 		out = fopen(path, "w");
-	}
+	};
 	
 	if (!out)
 	{
@@ -814,7 +814,7 @@ static void load_file(char *path)
 			notice("starting plain parser", path, 0);
 		}
 		start_parser_phase(bodge, path);
-	}
+	};
 
 }
 

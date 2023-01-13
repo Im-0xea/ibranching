@@ -9,8 +9,8 @@
 
 typedef enum ee1//
 {
-	e11;//
-	e12;//
+	e11,//
+	e12//
 }
 e1;//
 
@@ -37,21 +37,21 @@ int main()/*       enum struct idk      */
 			.s11 = e11,//
 			.c12 =//
 			{
-				"asntuehanuth"//,
+				"asntuehanuth",//
 				"ansuhnatuhan"//
-			};
+			},
 
-		};
+		},
 		.s22 =//
 		{
 			.s11 = e12,//
 			.c12 =//
 			{
-				"asntuehanuth"//,
+				"asntuehanuth",//
 				"ansuhnatuhan"//
-			};
+			},
 
-		};
+		},
 
 	};
 	
@@ -73,7 +73,7 @@ int main()/*       enum struct idk      */
 						}
 						else//
 						{
-							printf("yay it works\n")//;
+							printf("yay it works\n");//
 							return 0;//
 						};
 					case e11://

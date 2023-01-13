@@ -154,10 +154,10 @@ static void transfere_line(line_t *line, line_t *input_line)
 static psize find_valid(const char *line, const char *tok)
 	char *ptf = strchr(line, '"')
 	char *ptr = strstr(line, tok)
-	bool open = true
+	bool open = false
 	
-	while (ptf && !(open && ptf > ptr))
-		if (open)
+	while (ptf && ptr)
+		if (open && ptf > ptr)
 			ptr = strstr(ptr + 1, tok)
 		ptf  = strchr(ptf + 1, '"')
 		
@@ -221,14 +221,14 @@ static bool check_word(const char *line, const char *word, const char *stop)
 	char line_cpy[LINE_MAX]
 	strcpy(line_cpy, line)
 	
-	char *tok  = strtok(line_cpy, " \t\n")
+	char *tok  = strtok(line_cpy, " \t")
 	
 	while (tok && (!stop ||tok <= stop))
 		if (!strcmp(tok, word))
 			return true
 		
-		tok = strtok(NULL, word)
-	
+		tok = strtok(NULL, " \t")
+		
 	return false
 
 static void brackinate(char **outp, const psize tabs, const char *br, const bool nl)
@@ -280,7 +280,7 @@ static void branch_check(char *out, context *cont)
 			if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs)
 				--cont->ctermc
 			if (cont->tbranchc && cont->tbranchs[cont->tbranchc - 1] == *tabs)
-				if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs)
+				if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs - 1)
 					brackinate(&out, *tabs - dec, "},", true)
 				else
 					brackinate(&out, *tabs - dec, "};", true)
