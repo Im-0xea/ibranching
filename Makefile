@@ -9,6 +9,7 @@ LDFLAGS :=
 STRIPFLAGS := --strip-all -R .comment -x
 
 all:
+	rm ib
 	ib ib.c.ib -i --flags "$(CFLAGS) $(LDFLAGS)"
 
 install:
