@@ -14,8 +14,7 @@
 
 #define CONT_MAX 256
 #define FILE_MAX 256
-
-#define LINE_MAX 8000
+#define LINE_MAX 8192
 
 
 #include <stdio.h>
@@ -29,6 +28,7 @@
 #define noreturn _Noreturn
 
 typedef unsigned short psize;
+
 
 typedef enum ansi_color
 {
@@ -450,7 +450,8 @@ static void term_check(context *cont)
 	}
 	else if (!strchr(l_line->str, '(') && l_line->comment > get_spaces(l_line->tabs) + 1 && \
 	         !check_word(l_line->str, "else", l_line->str + l_line->comment) && \
-	         !check_word(l_line->str, "do"  , l_line->str + l_line->comment))
+	         !check_word(l_line->str, "do"  , l_line->str + l_line->comment) && \
+	         ((cont->ftype != cpp && cont->ftype != java) || !check_word(l_line->str, "try"  , l_line->str + l_line->comment)))
 	{
 		if (l_line->str[l_line->comment - 2] == ':')
 		{
@@ -580,7 +581,10 @@ static bool pre_file(char *path, const type ftype)
 {
 	switch (ftype)
 	{
-		case c:
+		case c:;
+		case cpp:;
+		case java:;
+		case go:
 			return true;
 			char out_path[255];
 			strcat(out_path, "cc -E -o ");
@@ -602,6 +606,7 @@ static bool pre_file(char *path, const type ftype)
 			return false;
 	}
 }
+
 static bool call_comp(const char *path, const char *std_comp, const bool adpr)
 {
 	char out_path[255] = "";
@@ -619,7 +624,6 @@ static bool call_comp(const char *path, const char *std_comp, const bool adpr)
 		strcat(out_path, overwrite_flag);
 	}
 	
-	
 	bool ret = vexec(out_path);
 	if (clean && ret)
 	{
@@ -635,18 +639,13 @@ static bool comp_file(char *path, const type ftype)
 {
 	switch (ftype)
 	{
-		case c:
-			return call_comp(path, "gcc -o ", true);
-		case cpp:
-			return call_comp(path, "g++ -o ", true);
-		case java:
-			return call_comp(path, "javac ", false);
-		case go:
-			return call_comp(path, "go build ", false);
+		case c: return call_comp(path, "gcc -o ", true);
+		case cpp: return call_comp(path, "g++ -o ", true);
+		case java: return call_comp(path, "javac ", false);
+		case go: return call_comp(path, "go build ", false);
 		case norm:
 			
-		default:
-			return false;
+		default: return false;
 	}
 }
 
@@ -654,10 +653,7 @@ static void start_parser_phase(pmode pm, char *path)
 {
 	FILE *out, *src = fopen(path, "r");
 	
-	if (!src)
-	{
-		error("failed to open source", path, 1, 0);
-	}
+	if (!src) error("failed to open source", path, 1, 0);
 	
 	if (to_stdout)
 	{
@@ -686,10 +682,7 @@ static void start_parser_phase(pmode pm, char *path)
 		out = fopen(path, "w");
 	}
 	
-	if (!out)
-	{
-		error("failed to open destination", path, 1, 0);
-	}
+	if (!out) error("failed to open destination", path, 1, 0);
 	
 	parser(out, src, modeset(path));
 	
@@ -704,46 +697,25 @@ static void load_file(char *path)
 {
 	if (integrate)
 	{
-		if (verbose)
-		{
-			notice("starting pre phase", path, 0);
-		}
+		if (verbose) notice("starting pre phase", path, 0);
 		
 		//start_parser_phase(pre, path)
 		
-		if (verbose)
-		{
-			notice("calling external preprocessing program", path, 0);
-		}
+		if (verbose) notice("calling external preprocessing program", path, 0);
 		
-		if (!pre_file(path, c))
-		{
-			error("failed to preprocess input", path, 1, 0);
-		}
+		if (!pre_file(path, c)) error("failed to preprocess input", path, 1, 0);
 		
-		if (verbose)
-		{
-			notice("starting in medias res phase", path, 0);
-		}
+		if (verbose) notice("starting in medias res phase", path, 0);
 		
 		start_parser_phase(imr, path);
 		
-		if (verbose)
-		{
-			notice("calling compiler", path, 0);
-		}
+		if (verbose) notice("calling compiler", path, 0);
 		
-		if (!comp_file(path, modeset(path)))
-		{
-			error("failed to postprocess output", path, 1, 0);
-		}
+		if (!comp_file(path, modeset(path))) error("failed to postprocess output", path, 1, 0);
 	}
 	else
 	{
-		if (verbose)
-		{
-			notice("starting plain parser", path, 0);
-		}
+		if (verbose) notice("starting plain parser", path, 0);
 		start_parser_phase(bodge, path);
 	}
 }
@@ -782,15 +754,6 @@ static amode long_arg_parser(const char *arg)
 		verbose = true;
 		return nothing;
 	}
-	if (!strcmp("version", arg))
-	{
-		version();
-	}
-	
-	if (!strcmp("help", arg))
-	{
-		help();
-	}
 	
 	if (!strcmp("tab", arg))
 	{
@@ -798,20 +761,10 @@ static amode long_arg_parser(const char *arg)
 		return nothing;
 	}
 	
-	if (!strcmp("spaces", arg))
-	{
-		return space;
-	}
-	
 	if (!strcmp("stdout", arg))
 	{
 		to_stdout = true;
 		return nothing;
-	}
-	
-	if (!strcmp("output", arg))
-	{
-		return soutput;
 	}
 	
 	if (!strcmp("integrate", arg))
@@ -826,17 +779,20 @@ static amode long_arg_parser(const char *arg)
 		return nothing;
 	}
 	
-	if (!strcmp("compiler", arg))
-	{
-		return scomp;
-	}
+	if (!strcmp("spaces", arg)) return space;
 	
-	if (!strcmp("flags", arg))
-	{
-		return sflags;
-	}
+	if (!strcmp("output", arg)) return soutput;
+	
+	if (!strcmp("compiler", arg)) return scomp;
+	
+	if (!strcmp("flags", arg)) return sflags;
+	
+	if (!strcmp("help", arg)) help();
+	
+	if (!strcmp("version", arg)) version();
 	
 	warn("invalid option", arg, 0);
+	
 	return nothing;
 }
 
@@ -847,21 +803,9 @@ static amode short_arg_parser(const char *arg)
 	{
 		switch (arg[i])
 		{
-			case 'h':
-				help();
-			
 			case 'v':
 				verbose = true;
 				return nothing;
-			
-			case 'V':
-				version();
-			
-			case 'o':
-				return soutput;
-			
-			case 's':
-				return space;
 			
 			case 'S':
 				to_stdout = true;
@@ -871,15 +815,21 @@ static amode short_arg_parser(const char *arg)
 				clean = false;
 				break;
 			
-			case 'c':
-				return scomp;
-			
-			case 'f':
-				return sflags;
-			
 			case 'i':
 				integrate = true;
 				break;
+			
+			case 'c': return scomp;
+			
+			case 'f': return sflags;
+			
+			case 'o': return soutput;
+			
+			case 's': return space;
+			
+			case 'h': help();
+			
+			case 'V': version();
 			
 			default :
 				char invalid[1];
@@ -903,10 +853,7 @@ static amode arg_parser(char *arg, const amode last)
 			case space:
 				const int sp = atoi(arg);
 				
-				if (!sp || sp < 128)
-				{
-					error("invalid amount of spaces", arg, 1, 0);
-				}
+				if (!sp || sp < 128) error("invalid amount of spaces", arg, 1, 0);
 				
 				spaces       = sp;
 				
@@ -926,20 +873,14 @@ static amode arg_parser(char *arg, const amode last)
 		}
 	}
 	
-	if (arg[1] == '-')
-	{
-		return long_arg_parser(arg + 2);
-	}
+	if (arg[1] == '-') return long_arg_parser(arg + 2);
 	
 	return short_arg_parser(arg + 1);
 }
 
 int main(const int argc, char **argv)
 {
-	if (argc < 2)
-	{
-		help();
-	}
+	if (argc < 2) help();
 	
 	char  *paths[FILE_MAX];
 	psize pathc    = 0;
@@ -962,10 +903,7 @@ int main(const int argc, char **argv)
 		}
 	}
 	
-	if (argument != nothing && argument != noarg)
-	{
-		error("uneven options", *--argv, 1, 0);
-	}
+	if (argument != nothing && argument != noarg) error("uneven options", *--argv, 1, 0);
 	
 	while (pathc)
 	{

@@ -3,10 +3,8 @@ PREFIX := /usr
 CC := gcc
 STRIP := strip
 
-CFLAGS := -O0 -std=gnu17 -Wall -g
-LDFLAGS :=
-
-STRIPFLAGS := --strip-all -R .comment -x
+CFLAGS := -Os -std=gnu17 -Wall
+LDFLAGS :=  -s
 
 all:
 	ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
@@ -14,7 +12,7 @@ all:
 install:
 	cp ib ${PREFIX}/bin/
 
-test:
+test: all
 	./ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
 	make -C testing
 
