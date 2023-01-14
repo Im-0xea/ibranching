@@ -3,8 +3,8 @@ PREFIX := /usr
 CC := gcc
 STRIP := strip
 
-CFLAGS := -Os -std=gnu17 -Wall
-LDFLAGS :=  -s
+CFLAGS := -O0 -std=gnu17 -Wall -g
+LDFLAGS := 
 
 all:
 	ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
@@ -14,11 +14,8 @@ install:
 
 test: all
 	./ib ib.c.ib -in --flags "$(CFLAGS) $(LDFLAGS)"
-	make -C testing
-
-sa:
 	cppcheck cppcheck --enable=all --inconclusive --library=posix --force --suppress=missingIncludeSystem ib.c
-	frama-c ib.c -c11
+	make -C testing
 
 clean:
 	rm -f *.c testing/*.c
