@@ -406,7 +406,7 @@ static void branch_check(char *out, context *cont)
 
 static void terminate(line_t *line, const char tchar, context *cont)
 {
-	if (line->comment <= get_spaces(line->tabs) + 1)
+	if (line->comment <= get_spaces(line->tabs) + 1 || line->str[line->comment - 2] == ':')
 	{
 		return;
 	}
@@ -574,9 +574,9 @@ static bool pre_file(char *path, const type ftype)
 {
 	switch (ftype)
 	{
-		case c:;
-		case cpp:;
-		case java:;
+		case c:
+		case cpp:
+		case java:
 		case go:
 			return true;
 			/*return false
@@ -859,7 +859,7 @@ static amode arg_parser(char *arg, const amode last)
 			case sflags:
 				overwrite_flag = arg;
 				return nothing;
-			case nothing:;
+			case nothing:
 			case noarg:
 				return noarg;
 		}

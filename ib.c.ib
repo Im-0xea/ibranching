@@ -291,7 +291,7 @@ static void branch_check(char *out, context *cont)
 		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1))
 
 static void terminate(line_t *line, const char tchar, context *cont)
-	if (line->comment <= get_spaces(line->tabs) + 1)
+	if (line->comment <= get_spaces(line->tabs) + 1 || line->str[line->comment - 2] == ':')
 		return
 	
 	if (line->str[line->comment - 2] == ';')
