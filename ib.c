@@ -66,6 +66,8 @@ typedef struct parser_context
 	const type ftype;
 	bool       mcom;
 	psize      gloc;
+	line_t     line;
+	line_t     l_line;
 	psize      tbranchc;
 	psize      tbranchs[CONT_MAX];
 	psize      nbranchc;
@@ -78,8 +80,6 @@ typedef struct parser_context
 	psize      fmsgsc;
 	psize      fmsgst[CONT_MAX];
 	char       fmsgss[CONT_MAX][LINE_MAX];
-	line_t     line;
-	line_t     l_line;
 }
 context;
 
@@ -277,10 +277,15 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 static bool check_word(const char *line, const char *word, const char *stop)
 {
 	char line_cpy[LINE_MAX];
-	const char *stop_cpy = line_cpy + (stop - line);
+	const char *stop_cpy;
+	if (stop)
+	{
+		stop_cpy = line_cpy + (stop - line);
+	}
 	strcpy(line_cpy, line);
 	
-	char *tok  = strtok(line_cpy, " \t\n");
+	char *save = NULL;
+	char *tok  = strtok_r(line_cpy, " \t\n", &save);
 	
 	while (tok && (!stop ||tok <= stop_cpy))
 	{
@@ -289,7 +294,7 @@ static bool check_word(const char *line, const char *word, const char *stop)
 			return true;
 		}
 		
-		tok = strtok(NULL, " \t\n");
+		tok = strtok_r(NULL, " \t\n", &save);
 		
 	}
 	return false;
@@ -492,7 +497,7 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		const bool cond = get_line(line, src, &cont.mcom);
 		++cont.gloc;
 		
-		if (line->comment != 0)
+		if (line->comment != 0 || l_line->comment != 0)
 		{
 			term_check(&cont);
 		}
@@ -532,22 +537,10 @@ static type modeset(const char *path)
 	
 	if (dot)
 	{
-		if (!strcmp(dot, ".c")   || !strcmp(dot, ".h"))
-		{
-			return c;
-		}
-		if (!strcmp(dot, ".cpp") || !strcmp(dot, ".hpp"))
-		{
-			return cpp;
-		}
-		if (!strcmp(dot, ".go"))
-		{
-			return go;
-		}
-		if (!strcmp(dot, ".java"))
-		{
-			return java;
-		}
+		if (!strcmp(dot, ".c")   || !strcmp(dot, ".h")) return c;
+		if (!strcmp(dot, ".cpp") || !strcmp(dot, ".hpp")) return cpp;
+		if (!strcmp(dot, ".go")) return go;
+		if (!strcmp(dot, ".java")) return java;
 	}
 	
 	warn("unable to detect filetype, disabling all language specific rules", path, 0);
@@ -564,7 +557,7 @@ static bool vexec(const char *path)
 	}
 	
 	char buff[LINE_MAX];
-	while (fgets(buff, sizeof(LINE_MAX), p))
+	while (fgets(buff, LINE_MAX, p))
 	{
 		printf("%s", buff);
 	}
@@ -586,20 +579,19 @@ static bool pre_file(char *path, const type ftype)
 		case java:;
 		case go:
 			return true;
-			char out_path[255];
-			strcat(out_path, "cc -E -o ");
-			strncat(out_path, path, strchr(path, '.') - path);
-			strcat(out_path, ".p ");
-			strcat(out_path, path);
-			char rm_path[255] = "rm ";
-			strcat(rm_path, path);
+			/*return false
+			char out_path[255]
+			strcat(out_path, "cc -E -o ")
+			strncat(out_path, path, strchr(path, '.') - path)
+			strcat(out_path, ".p ")
+			strcat(out_path, path)
+			char rm_path[255] = "rm "
+			strcat(rm_path, path)
 			if (!spaces)
-			{
-				spaces = 1;
-			}
-			bool ret = vexec(out_path);
-			ret &= vexec(rm_path);
-			return ret ;
+				spaces = 1
+			bool ret = vexec(out_path)
+			ret &= vexec(rm_path)
+			return ret*/
 		case norm:
 			
 		default:
@@ -853,7 +845,7 @@ static amode arg_parser(char *arg, const amode last)
 			case space:
 				const int sp = atoi(arg);
 				
-				if (!sp || sp < 128) error("invalid amount of spaces", arg, 1, 0);
+				if (!sp || sp > 128) error("invalid amount of spaces", arg, 1, 0);
 				
 				spaces       = sp;
 				
