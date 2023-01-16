@@ -4,7 +4,7 @@ A transpiler for non line-based programming languages allowing you to write code
 
 This drastically reduces code size(by 40% in length and 10% in filesize, on ib itself), makes code easier to write, and in my opinion encurages good code formating
 
-It also gets rid of the "where to put the braces" dicotomy, which plague tradition programming syntax aswell as the common mistake of missing semicolons
+It also gets rid of the "where to put the braces" dicotomy, which plagues traditional programming syntax aswell as the common mistake of missing semicolons
 
 ### Example
 
