@@ -21,11 +21,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <stdnoreturn.h>
 #include <string.h>
 #include <unistd.h>
 
-
-#define noreturn _Noreturn
 
 typedef unsigned short psize;
 
@@ -201,7 +200,7 @@ static psize find_valid(const char *line, const char *tok)
 
 static psize find_end(const char *line, bool *mcom)
 {
-	psize sline = find_valid(line, "//");
+	psize sline = find_valid(line, "//");//fuail
 	psize mline = find_valid(line, "/*");
 	psize cline = find_valid(line, "*/");
 	
@@ -330,7 +329,7 @@ static void branch_check(char *out, context *cont)
 {
 	psize       *tabs = &cont->l_line.tabs;
 	const psize tar   = cont->line.tabs;
-	const char  dir   = tar < *tabs ? -1 : (*tabs < tar ? 1 : 0);
+	const int  dir   = tar < *tabs ? -1 : (*tabs < tar ? 1 : 0);
 	const psize dec   = dir == 1 ? 1 : 0;
 	if (cont->ftype == go && dir == 1)
 	{
@@ -884,7 +883,7 @@ int main(const int argc, char **argv)
 		
 		if (argument == noarg)
 		{
-			if (pathc == FILE_MAX)
+			if (pathc == FILE_MAX + 1)
 			{
 				char log[16];
 				sprintf(log, "%d", pathc);
