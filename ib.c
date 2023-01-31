@@ -24,6 +24,7 @@
 #include <stdnoreturn.h>
 #include <string.h>
 #include <unistd.h>
+#include <getopt.h>
 
 
 typedef unsigned short psize;
@@ -437,7 +438,7 @@ static void term_check(context *cont)
 	}
 	if (line->tabs <= l_line->tabs)
 	{
-		if (cont->ctermc && cont->cterms[cont->ctermc - 1] == l_line->tabs - 1)
+		if (cont->ctermc && cont->cterms[cont->ctermc - 1] <= l_line->tabs - 1)
 		{
 			if(line->tabs == l_line->tabs)
 			{
@@ -872,6 +873,13 @@ static amode arg_parser(char *arg, const amode last)
 int main(const int argc, char **argv)
 {
 	if (argc < 2) help();
+	
+	static struct option long_opts[] =
+	{
+		{
+			"verbose", no_argument, 0, 1
+		}
+	};
 	
 	char  *paths[FILE_MAX];
 	psize pathc    = 0;
