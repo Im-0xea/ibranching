@@ -63,27 +63,31 @@ $ ib example.c.ib --spaces 4 (note: this flag is only required if you use spaces
     multiline comments work sorta
 */
 
-enum dir {
+enum dir
+{
     negative = -1,
     positive = 1,
     neutral  = 0
 };
 
-struct point {
+struct point
+{
     enum dir x;
     enum dir y;
 };
 
 int main()
 {
-    struct point pt = {
+    struct point pt =
+    {
         .x = positive,
         .y = negative
     };
     
     if (pt.x = positive && pt.y = negative)
     {
-        const char strings[2] = {
+        const char strings[2] =
+	{
 		"unbelievable!!" \
 		"multiline string!!!\n",
 		"another string"
