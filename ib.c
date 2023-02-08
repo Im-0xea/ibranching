@@ -389,6 +389,11 @@ static void branch_check(char *out, context *cont)
 				--cont->tbranchc;
 				continue;
 			}
+			if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs - 1)
+			{
+				brackinate(&out, *tabs - dec, "},", true);
+				continue;
+			}
 		}
 		
 		if (cont->nbranchc && cont->nbranchs[cont->nbranchc - 1] == *tabs - dec)
@@ -878,7 +883,7 @@ int main(const int argc, char **argv)
 	{
 		{
 			"verbose", no_argument, 0, 1
-		}
+		},
 	};
 	
 	char  *paths[FILE_MAX];
