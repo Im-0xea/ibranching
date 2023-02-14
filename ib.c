@@ -614,6 +614,11 @@ static bool call_comp(const char *path, const char *std_comp, const bool adpr)
 		strcat(out_path, " ");
 	}
 	strcat(out_path, path);
+	if (overwrite_out)
+	{
+		strcat(out_path, " -o ");
+		strcat(out_path, overwrite_out);
+	}
 	
 	if (overwrite_flag)
 	{
@@ -655,10 +660,6 @@ static void start_parser_phase(pmode pm, char *path)
 	if (to_stdout)
 	{
 		out = stdout;
-	}
-	else if (overwrite_out)
-	{
-		out = fopen(overwrite_out, "wa");
 	}
 	else
 	{
@@ -706,9 +707,6 @@ static void load_file(char *path)
 		
 		start_parser_phase(imr, path);
 		
-		if (verbose) notice("calling compiler", path, 0);
-		
-		if (!comp_file(path, modeset(path))) error("failed to postprocess output", path, 1, 0);
 	}
 	else
 	{
@@ -909,10 +907,17 @@ int main(const int argc, char **argv)
 	
 	if (argument != nothing && argument != noarg) error("uneven options", *--argv, 1, 0);
 	
+	char all[256] = "";
 	while (pathc)
 	{
 		load_file(paths[--pathc]);
+		strcat(all, " ");
+		strcat(all, paths[pathc]);
 	}
+	
+	if (verbose) notice("calling compiler", all, 0);
+	
+	if (integrate && !comp_file(all, c)) error("failed to postprocess output", all, 1, 0);
 	
 	exit(0);
 }
