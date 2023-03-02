@@ -661,6 +661,23 @@ static void start_parser_phase(pmode pm, char *path)
 	{
 		out = stdout;
 	}
+	if (overwrite_out)
+	{
+		char out_path[255];
+		
+		if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
+		{
+			warn("defined input is not a ib file", path, 0);
+			strcpy(out_path, path);
+			strcat(out_path, ".unib");
+		}
+		else
+		{
+			strncpy(out_path, path, strrchr(path,'.') - path);
+			path[strrchr(path, '.') - path] = '\0';
+		}
+		out = fopen(overwrite_out, "w");
+	}
 	else
 	{
 		char out_path[255];
