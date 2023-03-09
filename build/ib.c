@@ -3,14 +3,12 @@
  *                                */
 
 /* todo:
- *   -experiment with preprocessing before parsing
- *   -write typedef parser
  *   -fix multiline go include
  *   -fix anonymous go function
  */
 
 
-#define VERSION "0.12"
+#define VERSION "0.13"
 
 #define CONT_MAX 256
 #define FILE_MAX 256
@@ -75,6 +73,9 @@ psize spaces          = 0;
 bool  to_stdout       = false;
 bool  verbose         = false;
 char  *overwrite_out  = NULL;
+
+
+bool  skip = false;
 
 
 static void transfere_line(line_t *line, line_t *input_line)
@@ -154,7 +155,6 @@ static void strip_newline(char *str)
 static void strip_line(const char *in, char *str)
 {
 	strcpy(str, in + get_tabs(in));
-	
 	strip_newline(str);
 }
 
@@ -211,7 +211,7 @@ static bool check_word(const char *line, const char *word, const char *stop)
 	return false;
 }
 
-static void brackinate(char **outp, const psize tabs, const char *br, const bool nl)
+static void brackinate(char **outp, const psize tabs, const char *br, const bool nl, const bool nopre)
 {
 	char *out = *outp;
 	psize t = 0;
@@ -231,8 +231,10 @@ static void brackinate(char **outp, const psize tabs, const char *br, const bool
 	out[t] = '\0';
 	
 	strcat(out, br);
-	
-	strcat(out, "\n");
+	if (!nopre)
+	{
+		strcat(out, "\n");
+	}
 	
 	*outp += strlen(out);
 }
@@ -256,12 +258,18 @@ static void branch_check(char *out, context *cont)
 	{
 		*tabs += (psize) dir;
 		
+		const bool goel = (cont->ftype == go && dir == -1 && *tabs == tar && check_word(cont->line.str, "else", cont->line.str + cont->line.comment));
+		if (goel)
+		{
+			memmove(cont->line.str + 1, cont->line.str + get_tabs(cont->line.str), strlen(cont->line.str + get_tabs(cont->line.str)) + 2);
+			cont->line.str[0] = ' ';
+		}
 		if (cont->fmsgsc && cont->fmsgst[cont->fmsgsc - 1] == *tabs - dec)
 		{
 			if (dir == 1)
 			{
 				--cont->fmsgsc;
-				brackinate(&out, *tabs - dec, cont->fmsgss[cont->fmsgsc], !(cont->ftype == go));
+				brackinate(&out, *tabs - dec, cont->fmsgss[cont->fmsgsc], !(cont->ftype == go), (goel));
 			}
 		}
 		if (cont->bmsgsc && cont->bmsgst[cont->bmsgsc - 1] == *tabs - dec)
@@ -275,7 +283,7 @@ static void branch_check(char *out, context *cont)
 				    strncmp(line + get_spaces(*tabs), "#elifndef", 9) && \
 				    strncmp(line + get_spaces(*tabs), "#else", 5))
 				{
-					brackinate(&out, *tabs - dec, cont->bmsgss[cont->bmsgsc], true);
+					brackinate(&out, *tabs - dec, cont->bmsgss[cont->bmsgsc], true, false);
 				}
 			}
 			continue;
@@ -291,18 +299,18 @@ static void branch_check(char *out, context *cont)
 			{
 				if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs - 1)
 				{
-					brackinate(&out, *tabs - dec, "},", true);
+					brackinate(&out, *tabs - dec, "},", true, false);
 				}
 				else
 				{
-					brackinate(&out, *tabs - dec, "};", true);
+					brackinate(&out, *tabs - dec, "};", true, false);
 				}
 				--cont->tbranchc;
 				continue;
 			}
 			if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs - 1)
 			{
-				brackinate(&out, *tabs - dec, "},", true);
+				brackinate(&out, *tabs - dec, "},", true, false);
 				continue;
 			}
 		}
@@ -316,7 +324,7 @@ static void branch_check(char *out, context *cont)
 			continue;
 		}
 		
-		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1));
+		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1), (goel));
 	}
 }
 
@@ -385,9 +393,16 @@ static void term_check(context *cont)
 		{
 			cont->cterms[cont->ctermc++] = l_line->tabs;
 		}
-		if (!check_word(l_line->str, "typedef", l_line->str + l_line->comment))
+		if (cont->ftype != go && !check_word(l_line->str, "typedef", l_line->str + l_line->comment))
 		{
 			cont->tbranchs[cont->tbranchc++] = l_line->tabs;
+		}
+		if (cont->ftype == go && check_word(l_line->str, "import", l_line->str + l_line->comment))
+		{
+			strcpy(cont->fmsgss[cont->fmsgsc], "(");
+			cont->fmsgst[cont->fmsgsc++] = l_line->tabs;
+			strcpy(cont->bmsgss[cont->bmsgsc], ")");
+			cont->bmsgst[cont->bmsgsc++] = l_line->tabs;
 		}
 	}
 }
@@ -526,15 +541,7 @@ static noreturn void help(void)
 	     " -o --output    -> overwrite output path for *ALL* defined ib files\n" \
 	     " -s --spaces    -> use defined amount of spaces as indentation\n" \
 	     " -t --tabs      -> turns spaces mode off *again*\n" \
-	     " -S --stdout    -> output to stdout instead of file");
-	
-	exit(0);
-}
-
-static noreturn void version(void)
-{
-	fputs("Ib version "VERSION"\n", stdout);
-	
+	     " -S --stdout    -> output to stdout instead of file\n");
 	exit(0);
 }
 
@@ -596,7 +603,8 @@ int main(const int argc, char **argv)
 			case 'h':
 				help();
 			case 'V':
-				version();
+				fputs("Ib version "VERSION"\n", stdout);
+				exit(0);
 			case 'v':
 				verbose = true;
 				continue;
@@ -617,8 +625,8 @@ int main(const int argc, char **argv)
 	
 	if (optind >= argc)
 	{
-		fprintf(stderr, "no files defined");
-		exit(1);
+		fprintf(stderr, "no files defined\n");
+		help();
 	}
 	
 	while (optind < argc)
