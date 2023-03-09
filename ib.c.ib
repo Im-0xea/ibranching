@@ -3,7 +3,6 @@
  *                                */
 
 /* todo:
- *   -fix multiline go include
  *   -fix anonymous go function
  */
 
