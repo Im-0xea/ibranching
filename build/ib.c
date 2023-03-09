@@ -70,24 +70,11 @@ typedef struct parser_context
 }
 context;
 
-typedef enum arg_mode
-{
-	noarg,
-	nothing,
-	space,
-	soutput
-}
-amode;
-
 
 psize spaces          = 0;
 bool  to_stdout       = false;
-bool  integrate       = false;
-bool  clean           = true;
 bool  verbose         = false;
 char  *overwrite_out  = NULL;
-char  *overwrite_comp = NULL;
-char  *overwrite_flag = NULL;
 
 
 static void transfere_line(line_t *line, line_t *input_line)
@@ -345,9 +332,7 @@ static void terminate(line_t *line, const char tchar, context *cont)
 		char log[LINE_MAX];
 		strip_line(line->str, log);
 		fprintf(stderr, "line is already terminated %d: %s", cont->gloc - 1, log);
-		exit(0);
 	}
-	
 	
 	memmove(line->str + line->comment, line->str + line->comment - 1, strlen(line->str + line->comment - 2));
 	line->str[line->comment - 1] = tchar;
@@ -492,39 +477,26 @@ static void parser_phase(char *path)
 	{
 		out = stdout;
 	}
+	char out_path[255];
+	
+	if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
+	{
+		fprintf(stderr, "defined input is not a ib file %s", path);
+		strcpy(out_path, path);
+		strcat(out_path, ".unib");
+	}
+	else
+	{
+		strncpy(out_path, path, strrchr(path,'.') - path);
+		path[strrchr(path, '.') - path] = '\0';
+	}
+	
 	if (overwrite_out)
 	{
-		char out_path[255];
-		
-		if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
-		{
-			fprintf(stderr, "defined input is not a ib file %s", path);
-			strcpy(out_path, path);
-			strcat(out_path, ".unib");
-		}
-		else
-		{
-			strncpy(out_path, path, strrchr(path,'.') - path);
-			path[strrchr(path, '.') - path] = '\0';
-		}
 		out = fopen(overwrite_out, "w");
 	}
 	else
 	{
-		char out_path[255];
-		
-		if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
-		{
-			fprintf(stderr, "defined input is not a ib file %s", path);
-			strcpy(out_path, path);
-			strcat(out_path, ".unib");
-		}
-		else
-		{
-			strncpy(out_path, path, strrchr(path,'.') - path);
-			path[strrchr(path, '.') - path] = '\0';
-		}
-		
 		out = fopen(path, "w");
 	}
 	
@@ -566,101 +538,6 @@ static noreturn void version(void)
 	exit(0);
 }
 
-static amode long_arg_parser(const char *arg)
-{
-	if (!strcmp("verbose", arg))
-	{
-		verbose = true;
-		return nothing;
-	}
-	
-	if (!strcmp("tab", arg))
-	{
-		spaces = 0;
-		return nothing;
-	}
-	
-	if (!strcmp("stdout", arg))
-	{
-		to_stdout = true;
-		return nothing;
-	}
-	
-	if (!strcmp("spaces", arg)) return space;
-	
-	if (!strcmp("output", arg)) return soutput;
-	
-	if (!strcmp("help", arg)) help();
-	
-	if (!strcmp("version", arg)) version();
-	
-	fprintf(stderr, "invalid option %s", arg);
-	exit(1);
-	
-	return nothing;
-}
-
-static amode short_arg_parser(const char *arg)
-{
-	psize i = 0 ;
-	while(arg[i])
-	{
-		switch (arg[i])
-		{
-			case 'v':
-				verbose = true;
-				return nothing;
-			
-			case 'S':
-				to_stdout = true;
-				return nothing;
-			
-			case 'o': return soutput;
-			
-			case 's': return space;
-			
-			case 'h': help();
-			
-			case 'V': version();
-			
-			default :
-				exit(1);
-				
-				return nothing;
-		}
-		i++;
-	}
-	return nothing;
-}
-
-static amode arg_parser(char *arg, const amode last)
-{
-	if (arg[0] != '-' || strlen(arg) < 2)
-	{
-		switch (last)
-		{
-			case space:
-				const int sp = atoi(arg);
-				
-				if (!sp || sp > 128) fprintf(stderr, "invalid amount of spaces %s", arg);
-				
-				spaces       = sp;
-				
-				return nothing;
-			case soutput:
-				overwrite_out  = arg;
-				return nothing;
-			case nothing:
-			case noarg:
-				return noarg;
-		}
-	}
-	
-	if (arg[1] == '-') return long_arg_parser(arg + 2);
-	
-	return short_arg_parser(arg + 1);
-}
-
 int main(const int argc, char **argv)
 {
 	
@@ -684,6 +561,10 @@ int main(const int argc, char **argv)
 		},
 		
 		{
+			"output",  required_argument, 0, 'o'
+		},
+		
+		{
 			"stdout",  no_argument,       0, 'S'
 		},
 		
@@ -698,7 +579,6 @@ int main(const int argc, char **argv)
 	
 	char  *paths[FILE_MAX];
 	psize pathc    = 0;
-	amode argument = nothing;
 	
 	while (1)
 	{
@@ -720,11 +600,25 @@ int main(const int argc, char **argv)
 			case 'v':
 				verbose = true;
 				continue;
+			case 'o':
+				overwrite_out = optarg;
+				continue;
+			case 's':
+				spaces = atoi(optarg);
+				continue;
+			case 'S':
+				to_stdout = true;
+				continue;
+			case 't':
+				spaces = 0;
+				continue;
 		}
 	}
+	
 	if (optind >= argc)
 	{
 		fprintf(stderr, "no files defined");
+		exit(1);
 	}
 	
 	while (optind < argc)
