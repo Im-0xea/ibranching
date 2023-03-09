@@ -1,3 +1,4 @@
 ib
 *.swp
 *.dSYM
+**.o
