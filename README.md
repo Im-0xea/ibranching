@@ -125,7 +125,7 @@ this transpiler is originally intended for C and is written in it, therefore it 
 
 C++:
 
-cpp also works pretty well, its syntax is nearly the same as c, basically all usual language features are functional, some typical practices like putting template declarations in a seperate line need to be avoided or manually fixed by using backslashes
+cpp also works pretty well, its syntax is nearly the same as c, basically all usual language features are functional, some typical practices like putting template declarations and initilization list in a seperate line need to be avoided or manually fixed by using backslashes
 
 go:
 
