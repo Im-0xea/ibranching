@@ -129,7 +129,7 @@ cpp also works pretty well, its syntax is nearly the same as c, basically all us
 
 go:
 
-work in progress, only barebones
+quite a pain to implement due to the go compilers strict syntax rules, but ordinary go syntax and annoymous functions should be functional now.
 
 java:
 
