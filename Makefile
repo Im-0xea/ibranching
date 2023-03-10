@@ -42,9 +42,14 @@ $(PROGRAM): $(HEADERS) $(CFILES) $(OBJS)
 
 bootstrap: $(PROGRAM)
 
+setup_test:
+	$(eval IB = ./ib)
+
+test: setup_test clean $(PROGRAM)
+
 clean:
 	@echo " CLEAN"
-	@rm -f $(DEST)/*.h $(DEST)/*.o $(DEST)/*.c $(PROGRAM)
+	@rm -f $(DEST)/*.h $(DEST)/*.o $(DEST)/*.c
 
 install: $(PROGRAM)
 	@echo " INSTALL $(PROGRAM)"

@@ -3,7 +3,7 @@
  *                                */
 
 /* todo:
- *   -fix anonymous go function
+ *   nothing somehow
  */
 
 
@@ -191,7 +191,7 @@ static void branch_check(char *out, context *cont)
 	while (tar != *tabs)
 		*tabs += (psize) dir
 		
-		const bool goel = (cont->ftype == go && dir == -1 && *tabs == tar && check_word(cont->line.str, "else", cont->line.str + cont->line.comment))
+		const bool goel = (cont->ftype == go && dir == -1 && *tabs == tar && (check_word(cont->line.str, "else", cont->line.str + cont->line.comment) || cont->line.str[get_tabs(cont->line.str)] == '('))
 		if (goel)
 			memmove(cont->line.str + 1, cont->line.str + get_tabs(cont->line.str), strlen(cont->line.str + get_tabs(cont->line.str)) + 2)
 			cont->line.str[0] = ' '
