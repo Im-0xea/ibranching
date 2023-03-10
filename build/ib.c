@@ -3,11 +3,11 @@
  *                                */
 
 /* todo:
- *   -fix anonymous go function
+ *   nothing somehow
  */
 
 
-#define VERSION "0.13"
+#define VERSION "0.14"
 
 #define CONT_MAX 256
 #define FILE_MAX 256
@@ -19,6 +19,7 @@
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdnoreturn.h>
+
 #include <string.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -37,7 +38,7 @@ line_t;
 
 typedef enum filetype
 {
-	norm,
+	gen,
 	c,
 	cpp,
 	go,
@@ -74,15 +75,11 @@ bool  verbose         = false;
 char  *overwrite_out  = NULL;
 
 
-bool  skip = false;
-
-
 static void transfere_line(line_t *line, line_t *input_line)
 {
 	strcpy(line->str, input_line->str);
-	
-	line->comment = input_line->comment;
-	line->tabs    = input_line->tabs;
+	line->comment   = input_line->comment;
+	line->tabs      = input_line->tabs;
 }
 
 static psize find_valid(const char *line, const char *tok)
@@ -98,7 +95,6 @@ static psize find_valid(const char *line, const char *tok)
 			ptr = strstr(ptr + 1, tok);
 		}
 		ptf  = strchr(ptf + 1, '"');
-		
 		open = !open;
 	}
 	
@@ -112,7 +108,7 @@ static psize find_valid(const char *line, const char *tok)
 
 static psize find_end(const char *line, bool *mcom)
 {
-	psize sline = find_valid(line, "//");//fuail
+	psize sline = find_valid(line, "//");
 	psize mline = find_valid(line, "/*");
 	psize cline = find_valid(line, "*/");
 	
@@ -268,7 +264,7 @@ static void branch_check(char *out, context *cont)
 			if (dir == 1)
 			{
 				--cont->fmsgsc;
-				brackinate(&out, *tabs - dec, cont->fmsgss[cont->fmsgsc], !(cont->ftype == go), (goel));
+				brackinate(&out, *tabs - dec, cont->fmsgss[cont->fmsgsc], !(cont->ftype == go), goel);
 			}
 		}
 		if (cont->bmsgsc && cont->bmsgst[cont->bmsgsc - 1] == *tabs - dec)
@@ -323,7 +319,7 @@ static void branch_check(char *out, context *cont)
 			continue;
 		}
 		
-		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1), (goel));
+		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1), goel);
 	}
 }
 
@@ -467,17 +463,17 @@ static type modeset(const char *path)
 	
 	if (dot)
 	{
-		if (!strcmp(dot, ".c")   || !strcmp(dot, ".h")) return c;
+		if (!strcmp(dot, ".c")   || !strcmp(dot, ".h"))   return c;
 		if (!strcmp(dot, ".cpp") || !strcmp(dot, ".hpp")) return cpp;
-		if (!strcmp(dot, ".go")) return go;
+		if (!strcmp(dot, ".go"))   return go;
 		if (!strcmp(dot, ".java")) return java;
 	}
 	
 	fprintf(stderr, "unable to detect filetype, disabling all language specific rules %s", path);
-	return norm;
+	return gen;
 }
 
-static void parser_phase(char *path)
+static void file_loader(char *path)
 {
 	FILE *out, *src = fopen(path, "r");
 	
@@ -529,7 +525,7 @@ static void parser_phase(char *path)
 	}
 }
 
-static noreturn void help(void)
+static void help(void)
 {
 	puts("Usage ib: [FILE] ...\n\n" \
 	     "ib is a transpiler for languages which are not line based\n" \
@@ -541,7 +537,6 @@ static noreturn void help(void)
 	     " -s --spaces    -> use defined amount of spaces as indentation\n" \
 	     " -t --tabs      -> turns spaces mode off *again*\n" \
 	     " -S --stdout    -> output to stdout instead of file\n");
-	exit(0);
 }
 
 int main(const int argc, char **argv)
@@ -601,6 +596,7 @@ int main(const int argc, char **argv)
 				exit(1);
 			case 'h':
 				help();
+				exit(0);
 			case 'V':
 				fputs("Ib version "VERSION"\n", stdout);
 				exit(0);
@@ -626,6 +622,7 @@ int main(const int argc, char **argv)
 	{
 		fprintf(stderr, "no files defined\n");
 		help();
+		exit(0);
 	}
 	
 	while (optind < argc)
@@ -645,7 +642,7 @@ int main(const int argc, char **argv)
 	char all[256] = "";
 	while (pathc)
 	{
-		parser_phase(paths[--pathc]);
+		file_loader(paths[--pathc]);
 		strcat(all, " ");
 		strcat(all, paths[pathc]);
 	}
