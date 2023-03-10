@@ -46,6 +46,7 @@ setup_test:
 	$(eval IB = ./ib)
 
 test: setup_test clean $(PROGRAM)
+	make -c testing
 
 clean:
 	@echo " CLEAN"

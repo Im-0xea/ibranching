@@ -1,14 +1,13 @@
-package cat
+package main
 
 import
 	"fmt"
-	"io"
 	"os"
 
 func main()
 	func()
-		if 1
-			fmt.Println("works!\n")
+		if len(os.Args) > 0
+			fmt.Println("it works!")
 		else
-			fmt.Println("uhm\n")
+			fmt.Println("uhm")
 	()
