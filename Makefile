@@ -1,5 +1,5 @@
 DESTDIR = /
-PREFIX = /usr
+PREFIX = /usr/local
 
 SRC = .
 DEST = ./build
