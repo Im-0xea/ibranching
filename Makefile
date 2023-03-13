@@ -42,7 +42,9 @@ $(PROGRAM): $(HEADERS) $(CFILES) $(OBJS)
 	@echo " STRIP   $(PROGRAM)"
 	@$(STRIP) $(PROGRAM)
 
-bootstrap: $(PROGRAM)
+bootstrap:
+	@echo " CC      $<"
+	@$(CC) $(DEST)/ib.c $(CFLAGS) $(LDFLAGS) -I build -o $(PROGRAM) 
 
 setup_test:
 	$(eval IB = ./ib)
