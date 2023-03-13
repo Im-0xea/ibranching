@@ -1,4 +1,6 @@
+DESTDIR = /
 PREFIX = /usr
+
 SRC = .
 DEST = ./build
 
@@ -54,5 +56,5 @@ clean:
 
 install: $(PROGRAM)
 	@echo " INSTALL $(PROGRAM)"
-	@mkdir -p ${PREFIX}/bin
-	@cp $(PROGRAM) ${PREFIX}/bin/
+	@mkdir -p $(DESTDIR)/${PREFIX}/bin
+	@cp $(PROGRAM) $(DESTDIR)/$(PREFIX)/bin/
