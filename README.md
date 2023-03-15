@@ -102,9 +102,16 @@ int main()
 }
 ```
 
+### Packages
+
+- gentoo [my ebuild repo](https://github.com/Nik-Nothing/niki-gentoo)
+- arch [AUR](https://aur.archlinux.org/packages/ib-git) [my pkgbuild repo](https://github.com/Nik-Nothing/niki-pacman)
+
 ### Initial Build
 ~~~
-(root) $ make bootstrap (compiles provided pretranspiled file and installs it in ${PREFIX}/bin/)
+$ make bootstrap
+
+(root) $ make install
 ~~~
 
 ### Build with IB installed
