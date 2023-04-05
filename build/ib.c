@@ -7,12 +7,10 @@
  */
 
 
-#define VERSION "0.14"
+#define VERSION "0.2"
 
-#define CONT_MAX 256
-#define FILE_MAX 256
-#define LINE_MAX 8192
-
+#define CONT_MAX 128
+#define LINE_MAX 2000
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,14 +23,11 @@
 #include <getopt.h>
 
 
-typedef unsigned short psize;
-
-
 typedef struct line_type
 {
-	psize comment;
-	psize tabs;
-	char  str[LINE_MAX];
+	size_t comment;
+	size_t tabs;
+	char * str;
 }
 line_t;
 
@@ -50,39 +45,41 @@ typedef struct parser_context
 {
 	const type ftype;
 	bool       mcom;
-	psize      gloc;
+	size_t      gloc;
 	line_t     line;
 	line_t     l_line;
-	psize      tbranchc;
-	psize      tbranchs[CONT_MAX];
-	psize      nbranchc;
-	psize      nbranchs[CONT_MAX];
-	psize      ctermc;
-	psize      cterms[CONT_MAX];
-	psize      bmsgsc;
-	psize      bmsgst[CONT_MAX];
+	size_t     tbranchc;
+	size_t     tbranchs[CONT_MAX];
+	size_t     nbranchc;
+	size_t     nbranchs[CONT_MAX];
+	size_t     ctermc;
+	size_t     cterms[CONT_MAX];
+	size_t     bmsgsc;
+	size_t     bmsgst[CONT_MAX];
 	char       bmsgss[CONT_MAX][LINE_MAX];
-	psize      fmsgsc;
-	psize      fmsgst[CONT_MAX];
+	size_t     fmsgsc;
+	size_t     fmsgst[CONT_MAX];
 	char       fmsgss[CONT_MAX][LINE_MAX];
 }
 context;
 
 
-psize spaces          = 0;
-bool  to_stdout       = false;
-bool  verbose         = false;
-char  *overwrite_out  = NULL;
+size_t spaces          = 0;
+bool   to_stdout       = false;
+bool   verbose         = false;
+char   *overwrite_out  = NULL;
 
 
 static void transfere_line(line_t *line, line_t *input_line)
 {
-	strcpy(line->str, input_line->str);
+	char * oth = line->str;
+	line->str       = input_line->str;
+	input_line->str = oth;
 	line->comment   = input_line->comment;
 	line->tabs      = input_line->tabs;
 }
 
-static psize find_valid(const char *line, const char *tok)
+static size_t find_valid(const char *line, const char *tok)
 {
 	char *ptf = strchr(line, '"');
 	char *ptr = strstr(line, tok);
@@ -103,14 +100,14 @@ static psize find_valid(const char *line, const char *tok)
 		return strlen(line);
 	}
 	
-	return (psize) (ptr - line + 1);
+	return (size_t) (ptr - line + 1);
 }
 
-static psize find_end(const char *line, bool *mcom)
+static size_t find_end(const char *line, bool *mcom)
 {
-	psize sline = find_valid(line, "//");
-	psize mline = find_valid(line, "/*");
-	psize cline = find_valid(line, "*/");
+	size_t sline = find_valid(line, "//");
+	size_t mline = find_valid(line, "/*");
+	size_t cline = find_valid(line, "*/");
 	
 	if (!*mcom && mline < sline && cline == strlen(line))
 	{
@@ -129,12 +126,12 @@ static psize find_end(const char *line, bool *mcom)
 	return sline < mline ? sline : mline;
 }
 
-static psize get_tabs(const char *line)
+static size_t get_tabs(const char *line)
 {
 	return spaces == 0 ? strspn(line, "\t") : strspn(line, " ") / spaces;
 }
 
-static psize get_spaces(const psize tab)
+static size_t get_spaces(const size_t tab)
 {
 	return spaces == 0 ? tab : tab * spaces;
 }
@@ -161,7 +158,7 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 		return false;
 	}
 	
-	psize size = strlen(line->str);
+	size_t size = strlen(line->str);
 	
 	while (line->str[size - 2] == '\\')
 	{
@@ -170,7 +167,7 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 		{
 			break;
 		}
-		size           += strlen(apnd);
+		size += strlen(apnd);
 		strcat(line->str, apnd);
 	}
 	
@@ -206,10 +203,10 @@ static bool check_word(const char *line, const char *word, const char *stop)
 	return false;
 }
 
-static void brackinate(char **outp, const psize tabs, const char *br, const bool nl, const bool nopre)
+static void brackinate(char **outp, const size_t tabs, const char *br, const bool nl, const bool nopre)
 {
 	char *out = *outp;
-	psize t = 0;
+	size_t t = 0;
 	
 	if (nl)
 	{
@@ -236,10 +233,10 @@ static void brackinate(char **outp, const psize tabs, const char *br, const bool
 
 static void branch_check(char *out, context *cont)
 {
-	psize       *tabs = &cont->l_line.tabs;
-	const psize tar   = cont->line.tabs;
+	size_t       *tabs = &cont->l_line.tabs;
+	const size_t tar   = cont->line.tabs;
 	const int  dir   = tar < *tabs ? -1 : (*tabs < tar ? 1 : 0);
-	const psize dec   = dir == 1 ? 1 : 0;
+	const size_t dec   = dir == 1 ? 1 : 0;
 	if (cont->ftype == go && dir == 1)
 	{
 		out[0] = ' ';
@@ -251,7 +248,7 @@ static void branch_check(char *out, context *cont)
 	++out;
 	while (tar != *tabs)
 	{
-		*tabs += (psize) dir;
+		*tabs += (size_t) dir;
 		
 		const bool goel = (cont->ftype == go && dir == -1 && *tabs == tar && (check_word(cont->line.str, "else", cont->line.str + cont->line.comment) || cont->line.str[get_tabs(cont->line.str)] == '('));
 		if (goel)
@@ -334,7 +331,7 @@ static void terminate(line_t *line, const char tchar, context *cont)
 	{
 		char log[LINE_MAX];
 		strip_line(line->str, log);
-		fprintf(stderr, "line is already terminated %d: %s", cont->gloc - 1, log);
+		fprintf(stderr, "line is already terminated %ld: %s", cont->gloc - 1, log);
 	}
 	
 	memmove(line->str + line->comment, line->str + line->comment - 1, strlen(line->str + line->comment - 2));
@@ -416,6 +413,8 @@ static void parser(FILE *out, FILE *src, const type ftype)
 	};
 	line_t *line = &cont.line;
 	line_t *l_line = &cont.l_line;
+	line->str   = malloc(sizeof(char) * 2000);
+	l_line->str = malloc(sizeof(char) * 2000);
 	
 	get_line(l_line, src, &cont.mcom);
 	while (true)
@@ -487,33 +486,36 @@ static void file_loader(char *path)
 	{
 		out = stdout;
 	}
-	char out_path[255];
-	
-	if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
-	{
-		fprintf(stderr, "defined input is not a ib file %s", path);
-		strcpy(out_path, path);
-		strcat(out_path, ".unib");
-	}
 	else
 	{
-		strncpy(out_path, path, strrchr(path,'.') - path);
-		path[strrchr(path, '.') - path] = '\0';
-	}
-	
-	if (overwrite_out)
-	{
-		out = fopen(overwrite_out, "w");
-	}
-	else
-	{
-		out = fopen(path, "w");
-	}
-	
-	if (!out)
-	{
-		perror("failed to open destination");
-		exit(1);
+		char out_path[255];
+		
+		if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
+		{
+			fprintf(stderr, "defined input is not a ib file %s", path);
+			strcpy(out_path, path);
+			strcat(out_path, ".unib");
+		}
+		else
+		{
+			strncpy(out_path, path, strrchr(path,'.') - path);
+			path[strrchr(path, '.') - path] = '\0';
+		}
+		
+		if (overwrite_out)
+		{
+			out = fopen(overwrite_out, "w");
+		}
+		else
+		{
+			out = fopen(path, "w");
+		}
+		
+		if (!out)
+		{
+			perror("failed to open destination");
+			exit(1);
+		}
 	}
 	
 	parser(out, src, modeset(path));
@@ -542,7 +544,7 @@ static void help(void)
 int main(const int argc, char **argv)
 {
 	
-	const char * short_options = "hvVs:So:t";
+	const char * short_options = "hvVs:o:St";
 	const struct option long_options[] =
 	{
 		{
@@ -577,9 +579,6 @@ int main(const int argc, char **argv)
 			0, 0, 0, 0
 		},
 	};
-	
-	char  *paths[FILE_MAX];
-	psize pathc    = 0;
 	
 	while (1)
 	{
@@ -627,24 +626,8 @@ int main(const int argc, char **argv)
 	
 	while (optind < argc)
 	{
-		if (pathc == FILE_MAX + 1)
-		{
-			char log[16];
-			sprintf(log, "%d", pathc);
-			fprintf(stderr, "too many files");
-			exit(1);
-		}
-		
-		paths[pathc++] = argv[optind];
+		file_loader(argv[optind]);
 		++optind;
-	}
-	
-	char all[256] = "";
-	while (pathc)
-	{
-		file_loader(paths[--pathc]);
-		strcat(all, " ");
-		strcat(all, paths[pathc]);
 	}
 	
 	exit(0);
