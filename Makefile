@@ -40,7 +40,7 @@ $(PROGRAM): $(HEADERS) $(CFILES) $(OBJS)
 	@echo " LD      $(PROGRAM)"
 	@$(LD) $(LDFLAGS) $(LIBS) $(OBJS) -o $(PROGRAM)
 	@echo " STRIP   $(PROGRAM)"
-	@$(STRIP) $(PROGRAM)
+	#@$(STRIP) $(PROGRAM)
 
 bootstrap:
 	@echo " CC      $<"
@@ -56,7 +56,7 @@ clean:
 	@echo " CLEAN"
 	@rm -f $(DEST)/*.h $(DEST)/*.o $(DEST)/*.c
 
-install: $(PROGRAM)
+install:
 	@echo " INSTALL $(PROGRAM)"
 	@mkdir -p $(DESTDIR)/${PREFIX}/bin
 	@cp $(PROGRAM) $(DESTDIR)/$(PREFIX)/bin/
