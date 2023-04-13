@@ -5,7 +5,8 @@
 - [Introduction](#introduction)
 - [Background](#background)
 - [Base Concepts](#base-concepts)
-- [C isms](#c-isms)
+- [Language Specifics](#language-specifics)
+    - [C isms](#c-isms)
 - [Editors](#editors)
     - [Vim](#vim)
 - [Installation](#installation)
@@ -86,11 +87,13 @@ print("five") // prints number
 print("five"); // prints number
 ~~~
 
-## C isms
+## Language Specifics
+
+### C isms
 
 IB was originally only intended for and is written in C, while the base concepts allow you to already write pretty clean C, IB brings some quality of life improvements 
 
-### Lists
+#### Lists
 
 Scopes which are opened by a line ending with '=' are lists and each line inside is terminated with a ',', the list itself is also terminated.
 
@@ -110,9 +113,49 @@ int nums[] =
     3
 };
 ~~~
-#### Enums
+##### Enums
 
 The same rule applies to enums.. which turns out to be a nightmare, as enums only stick out because of the keyword enum, which IB parses for.
+
+#### Structs and Classes
+
+Both Structs and classes fuction like a ordinary scope, but they are terminated.
+
+~~~ C
+struct Point
+    int x
+    int y
+~~~
+&#13;
+
+~~~ C
+struct Point
+{
+    int x;
+    int y;
+};
+~~~
+
+One exception is if your struct is an inline typedef.
+
+~~~ C
+typedef struct Point
+    int x
+    int y
+pt
+~~~
+&#13;
+
+~~~C
+typedef struct Point
+{
+    int x;
+    int y;
+}
+pt;
+~~~
+
+
 
 ## Editors
 
