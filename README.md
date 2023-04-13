@@ -1,162 +1,147 @@
-# Indentation-Branching
+# Indentation Branching
 
-A transpiler for non line-based programming languages allowing you to write code without line independent symbols like ";{},", by parsing indentation, newlines and in outsider cases keywords
+## Index
 
-This drastically reduces code size(by 40% in length and 10% in filesize, on ib itself), makes code easier to write, and in my opinion encurages good code formating
+- [Introduction](#introduction)
+- [Background](#background)
+- [Base Concepts](#base-concepts)
+- [C isms](#c-isms)
+- [Editors](#editors)
+    - [Vim](#vim)
+- [Installation](#installation)
+    - [Packages](#packages)
+    - [Source](#source)
 
-It also gets rid of the "where to put the braces" dicotomy, which plagues traditional programming syntax aswell as the common mistake of missing semicolons
+## Introduction
 
-### Example
+IB (Indentation Branching) is a transpiler which 'turns everything into python', it is my frankenstein, so seams I might aswell write some documentation to explain some of my madness.
 
-```
-// example.c.ib
+## Background
 
-#if 1
-    #include <stdio.h>
-#else
-    #error "not possible"
+I used to have a very old german mechanical keyboard, which was missing 'alt-gr', making it unable to type '{}' on the iso layout.
 
-/*
-    multiline comments work sorta
-*/
+While mapping keys was possible in some cases, I wanted to be able to write C on any machine, so I decided I would try to make a program which would generate the braces for me, the indentation implied where I wanted them anyhow, so on a lazy afternoon I wrote IB for C, and have since been expending it onto other syntactics.
 
-enum dir
-    negative = -1
-    positive = 1
-    neutral  = 0
+## Base Concepts
 
-struct point
-    enum dir x
-    enum dir y
+The following rules are in use in some form in all languages, although as indicated by the quotes some concepts have ambiguious meanings
 
-int main()
-    struct point pt =
-        .x = positive
-        .y = negative
-    
-    if (pt.x = positive && pt.y = negative)
-    	const char strings[2] =
-		"unbelievable!!" \
-		"multiline string!!!\n"
-		"another string"
-        printf("%s%s", strings[0], strings[1])
-        return 0
-    else
-        return 1 // comment after termination
-		
-```
+### Scoping
 
-```
-$ ib example.c.ib --spaces 4 (note: this flag is only required if you use spaces to indent)
-```
+Indentation is 'scoping'.
 
-```c
-// example.c
+~~~ C
+ -> 
+~~~
+&#13;
 
-#if 1
-    #include <stdio.h>
-#else
-    #error "not possible"
-#endif
-
-/*
-    multiline comments work sorta
-*/
-
-enum dir
+~~~ C
 {
-    negative = -1,
-    positive = 1,
-    neutral  = 0
-};
-
-struct point
-{
-    enum dir x;
-    enum dir y;
-};
-
-int main()
-{
-    struct point pt =
-    {
-        .x = positive,
-        .y = negative
-    };
-    
-    if (pt.x = positive && pt.y = negative)
-    {
-        const char strings[2] =
-	{
-		"unbelievable!!" \
-		"multiline string!!!\n",
-		"another string"
-	};
-        printf("%s%s", strings[0], strings[1]);
-        return 0;
-    }
-    else
-    {
-        return 1; //comment after termination
-    }
+ -> 
 }
-```
+~~~ 
 
-### Packages
+### Termination
 
-- gentoo [my ebuild repo](https://github.com/Nik-Nothing/niki-gentoo)
-- arch [AUR](https://aur.archlinux.org/packages/ib-git) [my pkgbuild repo](https://github.com/Nik-Nothing/niki-pacman)
+Each line not followed by scoping is 'terminated'
 
-### Initial Build
+~~~ C
+print("one")
+if (1)
+    print("two")
 ~~~
-$ make bootstrap
+&#13;
 
-(root) $ make install
-~~~
-
-### Build with IB installed
-
-~~~
-$ make
-
-$ make test (transpiles itself + some torture tests, to ensure that you are not installing a faulty build)
-
-(root) $ make install
+~~~ C
+print("one");
+if (1)
+{
+    print("two");
+}
 ~~~
 
-### Languages
+### End of Line
 
-C:
+A line doesn't end if its last charcter is '\\'.
 
-this transpiler is originally intended for C and is written in it, therefore it has quite decent C support, also Im currently working to intigrate ib into the c compilation process in medias res, by running a lightweight parser for preprocessor statements, then calling the c preprocessor followed by a call to the main parser stage to actually ib the code, this would make all ib-c alot more ridgit as some features rely on keywords which can be altered by macros and defines.
-
-C++:
-
-cpp also works pretty well, its syntax is nearly the same as c, basically all usual language features are functional, some typical practices like putting template declarations and initilization list in a seperate line need to be avoided or manually fixed by using backslashes
-
-go:
-
-quite a pain to implement due to the go compilers strict syntax rules, but ordinary go syntax and annoymous functions should be functional now.
-
-java:
-
-seams to work fine, im not that aware of it special cases though
-
-### Editors
-
-looks best with a smaller tab size, using spaces as tabs is supported by a special flag but not recommended.
-
-displaying tabs and spaces is strongly recommended as any improper indentation will completly break your code
-
-typically the syntax highlighting of the language works if forced
-
-- VIM:
+~~~ C
+print("three" \
+      "four" )
 ~~~
+&#13;
+
+~~~ C
+print("three" \
+      "four" );
+~~~
+
+A line ends when a comment is opened.
+
+~~~ C
+print("five") // prints number
+~~~
+&#13;
+
+~~~
+print("five"); // prints number
+~~~
+
+## C isms
+
+IB was originally only intended for and is written in C, while the base concepts allow you to already write pretty clean C, IB brings some quality of life improvements 
+
+### Lists
+
+Scopes which are opened by a line ending with '=' are lists and each line inside is terminated with a ',', the list itself is also terminated.
+
+~~~ C
+int nums[] =
+    1
+    2
+    3
+~~~
+&#13;
+
+~~~ C
+int nums[] =
+{
+    1,
+    2,
+    3
+};
+~~~
+#### Enums
+
+The same rule applies to enums.. which turns out to be a nightmare, as enums only stick out because of the keyword enum, which IB parses for.
+
+## Editors
+
+Ib syntax tends to look better with a smaller tabsize, it is also strongly recommended to use actual tabs instead of spaces, although it does support them, any improper indentation will cause failure.
+
+### Vim
+
+~~~ vim
 au! BufRead,BufNewFile *.c.ib setfiletype c
+au! BufRead,BufNewFile *.cpp.ib setfiletype cpp
 
 set tabstop=4
 set shiftwidth=4
 
 set list
 set listchars=tab:>\ ,space:.
+~~~
+
+## Installation
+
+### Packages
+
+- gentoo [my ebuild repo](https://github.com/Nik-Nothing/niki-gentoo)
+- arch [AUR](https://aur.archlinux.org/packages/ib-git) [my pkgbuild repo](https://github.com/Nik-Nothing/niki-pacman)
+
+### Source
+
+~~~
+$ make bootstrap
+
+(root) $ make install
 ~~~
