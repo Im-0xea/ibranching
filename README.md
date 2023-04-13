@@ -20,7 +20,7 @@ IB (Indentation Branching) is a transpiler which 'turns everything into python',
 
 I used to have a very old german mechanical keyboard, which was missing 'alt-gr', making it unable to type '{}' on the iso layout.
 
-While mapping keys was possible in some cases, I wanted to be able to write C on any machine, so I decided I would try to make a program which would generate the braces for me, the indentation implied where I wanted them anyhow, so on a lazy afternoon I wrote IB for C, and have since been expending it onto other syntactics.
+While mapping keys was possible in some cases, I wanted to be able to write C on any machine, so I decided I would try to make a program which would generate the braces for me, the indentation implied where I wanted them anyhow, so on a lazy afternoon I wrote IB for C, and have since been expanding it onto other syntactics.
 
 ## Base Concepts
 
@@ -82,7 +82,7 @@ print("five") // prints number
 ~~~
 &#13;
 
-~~~
+~~~ C
 print("five"); // prints number
 ~~~
 
