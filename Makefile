@@ -34,7 +34,7 @@ $(DEST)/%.c: $(SRC)/%.c.ib
 
 $(DEST)/%.o: $(DEST)/%.c
 	@echo " CC      $<"
-	@$(CC) $< $(CFLAGS) -I build -c -o $@ 
+	@$(CC) $< $(CFLAGS) -I build -c -o $@
 
 $(PROGRAM): $(HEADERS) $(CFILES) $(OBJS)
 	@echo " LD      $(PROGRAM)"
@@ -44,7 +44,7 @@ $(PROGRAM): $(HEADERS) $(CFILES) $(OBJS)
 
 bootstrap:
 	@echo " CC      $<"
-	@$(CC) $(DEST)/ib.c $(CFLAGS) $(LDFLAGS) -I build -o $(PROGRAM) 
+	@$(CC) $(DEST)/ib.c $(CFLAGS) $(LDFLAGS) -I build -o $(PROGRAM)
 
 setup_test:
 	$(eval IB = ./ib)

@@ -1,5 +1,5 @@
-/*                                * 
- *   ib (indentation branching)   * 
+/*                                *
+ *   ib (indentation branching)   *
  *                                */
 
 /* todo:
@@ -138,9 +138,10 @@ static size_t get_spaces(const size_t tab)
 
 static void strip_newline(char *str)
 {
-	if (str[strlen(str) - 1] == '\n')
+	size_t length = strlen(str);
+	if (length > 0 && str[length - 1] == '\n')
 	{
-		str[strlen(str) - 1] = '\0';
+		str[length - 1] = '\0';
 	}
 }
 
@@ -172,7 +173,7 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 	}
 	
 	line->comment = find_end(line->str, mcom);
-	line->tabs    = get_tabs(line->str);
+	line->tabs = get_tabs(line->str);
 	
 	return true;
 }
@@ -180,7 +181,7 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 static bool check_word(const char *line, const char *word, const char *stop)
 {
 	char line_cpy[LINE_MAX];
-	const char *stop_cpy;
+	const char *stop_cpy = NULL;
 	if (stop)
 	{
 		stop_cpy = line_cpy + (stop - line);
@@ -482,40 +483,38 @@ static void file_loader(char *path)
 		exit(1);
 	}
 	
+	char out_path[255];
+	size_t path_length = strlen(path);
+	
+	if (path_length < 4 || strcmp(path + path_length - 3, ".ib"))
+	{
+		fprintf(stderr, "defined input is not a ib file %s", path);
+		strcpy(out_path, path);
+		strcat(out_path, ".unib");
+	}
+	else
+	{
+		strncpy(out_path, path, strrchr(path,'.') - path);
+		path[strrchr(path, '.') - path] = '\0';
+	}
+	
 	if (to_stdout)
 	{
 		out = stdout;
 	}
+	else if (overwrite_out)
+	{
+		out = fopen(overwrite_out, "w");
+	}
 	else
 	{
-		char out_path[255];
-		
-		if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
-		{
-			fprintf(stderr, "defined input is not a ib file %s", path);
-			strcpy(out_path, path);
-			strcat(out_path, ".unib");
-		}
-		else
-		{
-			strncpy(out_path, path, strrchr(path,'.') - path);
-			path[strrchr(path, '.') - path] = '\0';
-		}
-		
-		if (overwrite_out)
-		{
-			out = fopen(overwrite_out, "w");
-		}
-		else
-		{
-			out = fopen(path, "w");
-		}
-		
-		if (!out)
-		{
-			perror("failed to open destination");
-			exit(1);
-		}
+		out = fopen(path, "w");
+	}
+	
+	if (!out)
+	{
+		perror("failed to open destination");
+		exit(1);
 	}
 	
 	parser(out, src, modeset(path));
@@ -543,7 +542,6 @@ static void help(void)
 
 int main(const int argc, char **argv)
 {
-	
 	const char * short_options = "hvVs:o:St";
 	const struct option long_options[] =
 	{
