@@ -348,16 +348,26 @@ static void file_loader(char *path)
 		perror("failed to open source")
 		exit(1)
 
-	char out_path[255]
-	size_t path_length = strlen(path)
+	size_t in_path_length = strlen(path)
+	char out_path[256] = "/tmp/dummy.unib"
+	size_t out_path_length = in_path_length - 3
 
-	if (path_length < 4 || strcmp(path + path_length - 3, ".ib"))
+	if (in_path_length < 4 || strcmp(path + out_path_length, ".ib"))
 		fprintf(stderr, "defined input is not a ib file %s", path)
-		strcpy(out_path, path)
-		strcat(out_path, ".unib")
+
+		// Try to determine output path
+		if (in_path_length < 255 - 5)
+			strcpy(out_path, path)
+			strcat(out_path, ".unib")
+		else if (in_path_length < 255)
+			strcpy(out_path, path)
+			strcat(out_path, "_")
+		else
+			fprintf(stderr, "path of input file has the maximum allowed length")
+		path = out_path
 	else
-		strncpy(out_path, path, strrchr(path,'.') - path)
-		path[strrchr(path, '.') - path] = '\0'
+		//	at this point we know, that path ends with ".ib"
+		path[out_path_length] = '\0'
 
 	if (to_stdout)
 		out = stdout
@@ -400,7 +410,7 @@ int main(const int argc, char **argv)
 		{ "tab",     no_argument,       0, 't' }
 		{ 0, 0, 0, 0 }
 
-	while (1)
+	while (true)
 		const int opt = getopt_long(argc, argv, short_options, long_options, NULL)
 
 		if (opt == -1) break
