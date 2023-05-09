@@ -1,5 +1,5 @@
-/*                                * 
- *   ib (indentation branching)   * 
+/*                                *
+ *   ib (indentation branching)   *
  *                                */
 
 /* todo:
@@ -84,7 +84,7 @@ static size_t find_valid(const char *line, const char *tok)
 	char *ptf = strchr(line, '"');
 	char *ptr = strstr(line, tok);
 	bool open = false;
-	
+
 	while (ptf && ptr)
 	{
 		if (open && ptf > ptr)
@@ -94,12 +94,12 @@ static size_t find_valid(const char *line, const char *tok)
 		ptf  = strchr(ptf + 1, '"');
 		open = !open;
 	}
-	
+
 	if (!ptr)
 	{
 		return strlen(line);
 	}
-	
+
 	return (size_t) (ptr - line + 1);
 }
 
@@ -108,12 +108,12 @@ static size_t find_end(const char *line, bool *mcom)
 	size_t sline = find_valid(line, "//");
 	size_t mline = find_valid(line, "/*");
 	size_t cline = find_valid(line, "*/");
-	
+
 	if (!*mcom && mline < sline && cline == strlen(line))
 	{
 		*mcom = true;
 	}
-	
+
 	if (*mcom)
 	{
 		if (cline < sline && cline < mline)
@@ -122,7 +122,7 @@ static size_t find_end(const char *line, bool *mcom)
 		}
 		return 0;
 	}
-	
+
 	return sline < mline ? sline : mline;
 }
 
@@ -138,9 +138,10 @@ static size_t get_spaces(const size_t tab)
 
 static void strip_newline(char *str)
 {
-	if (str[strlen(str) - 1] == '\n')
+	size_t length = strlen(str);
+	if (length > 0 && str[length - 1] == '\n')
 	{
-		str[strlen(str) - 1] = '\0';
+		str[length - 1] = '\0';
 	}
 }
 
@@ -157,9 +158,9 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 		line->tabs = 0;
 		return false;
 	}
-	
+
 	size_t size = strlen(line->str);
-	
+
 	while (line->str[size - 2] == '\\')
 	{
 		char apnd[LINE_MAX];
@@ -170,36 +171,49 @@ static bool get_line(line_t *line, FILE *file, bool *mcom)
 		size += strlen(apnd);
 		strcat(line->str, apnd);
 	}
-	
+
+	bool empty = true;
+	for (char* c = line->str; empty && *c != '\0'; c++)
+	{
+		empty &= *c <= ' ';
+	}
+
+	if (empty)
+	{
+		line->str[0]  = '\0';
+	}
+	else
+	{
+		line->tabs = get_tabs(line->str);
+	}
 	line->comment = find_end(line->str, mcom);
-	line->tabs    = get_tabs(line->str);
-	
+
 	return true;
 }
 
 static bool check_word(const char *line, const char *word, const char *stop)
 {
 	char line_cpy[LINE_MAX];
-	const char *stop_cpy;
+	const char *stop_cpy = NULL;
 	if (stop)
 	{
 		stop_cpy = line_cpy + (stop - line);
 	}
 	strcpy(line_cpy, line);
-	
+
 	char *save = NULL;
 	char *tok  = strtok_r(line_cpy, " \t\n", &save);
-	
+
 	while (tok && (!stop ||tok <= stop_cpy))
 	{
 		if (!strcmp(tok, word))
 		{
 			return true;
 		}
-		
+
 		tok = strtok_r(NULL, " \t\n", &save);
-		
 	}
+
 	return false;
 }
 
@@ -207,27 +221,27 @@ static void brackinate(char **outp, const size_t tabs, const char *br, const boo
 {
 	char *out = *outp;
 	size_t t = 0;
-	
+
 	if (nl)
 	{
 		while(!spaces && t < tabs)
 		{
 			out[t++] = '\t';
 		}
-		
+
 		while(spaces && t < get_spaces(tabs))
 		{
 			out[t++] = ' ';
 		}
 	}
 	out[t] = '\0';
-	
+
 	strcat(out, br);
 	if (!nopre)
 	{
 		strcat(out, "\n");
 	}
-	
+
 	*outp += strlen(out);
 }
 
@@ -237,19 +251,25 @@ static void branch_check(char *out, context *cont)
 	const size_t tar   = cont->line.tabs;
 	const int  dir   = tar < *tabs ? -1 : (*tabs < tar ? 1 : 0);
 	const size_t dec   = dir == 1 ? 1 : 0;
-	if (cont->ftype == go && dir == 1)
+	const bool   after_empty = cont->l_line.str[0] == '\0';
+
+	if (dir == 1 || !after_empty)
 	{
-		out[0] = ' ';
+		if (cont->ftype == go && dir == 1)
+		{
+			out[0] = ' ';
+		}
+		else
+		{
+			out[0] = '\n';
+		}
+		++out;
 	}
-	else
-	{
-		out[0] = '\n';
-	}
-	++out;
+
 	while (tar != *tabs)
 	{
 		*tabs += (size_t) dir;
-		
+
 		const bool goel = (cont->ftype == go && dir == -1 && *tabs == tar && (check_word(cont->line.str, "else", cont->line.str + cont->line.comment) || cont->line.str[get_tabs(cont->line.str)] == '('));
 		if (goel)
 		{
@@ -280,7 +300,7 @@ static void branch_check(char *out, context *cont)
 			}
 			continue;
 		}
-		
+
 		if (dir == -1)
 		{
 			if (cont->ctermc && cont->cterms[cont->ctermc - 1] == *tabs)
@@ -306,7 +326,7 @@ static void branch_check(char *out, context *cont)
 				continue;
 			}
 		}
-		
+
 		if (cont->nbranchc && cont->nbranchs[cont->nbranchc - 1] == *tabs - dec)
 		{
 			if (dir == -1)
@@ -315,8 +335,15 @@ static void branch_check(char *out, context *cont)
 			}
 			continue;
 		}
-		
+
 		brackinate(&out, *tabs - dec, dir == 1 ? "{" : "}", !(cont->ftype == go && dir == 1), goel);
+
+	}
+
+	if (dir != 1 && after_empty)
+	{
+		out[0] = '\n';
+		++out;
 	}
 }
 
@@ -326,14 +353,14 @@ static void terminate(line_t *line, const char tchar, context *cont)
 	{
 		return;
 	}
-	
+
 	if (line->str[line->comment - 2] == ';')
 	{
 		char log[LINE_MAX];
 		strip_line(line->str, log);
 		fprintf(stderr, "line is already terminated %ld: %s", cont->gloc - 1, log);
 	}
-	
+
 	memmove(line->str + line->comment, line->str + line->comment - 1, strlen(line->str + line->comment - 2));
 	line->str[line->comment - 1] = tchar;
 }
@@ -349,7 +376,7 @@ static void term_check(context *cont)
 			strcpy(cont->bmsgss[cont->bmsgsc], "#endif");
 			cont->bmsgst[cont->bmsgsc++] = l_line->tabs;
 		}
-		
+
 		return;
 	}
 	if (line->tabs <= l_line->tabs)
@@ -360,15 +387,15 @@ static void term_check(context *cont)
 			{
 				terminate(l_line, ',', cont);
 			}
-			
+
 			return;
 		}
 		if (cont->ftype != go)
 		{
 			terminate(l_line, ';', cont);
 		}
-		
 	}
+
 	else if (!strchr(l_line->str, '(') && l_line->comment > get_spaces(l_line->tabs) + 1 && \
 	         !check_word(l_line->str, "else", l_line->str + l_line->comment) && \
 	         !check_word(l_line->str, "do"  , l_line->str + l_line->comment) && \
@@ -379,7 +406,7 @@ static void term_check(context *cont)
 			cont->nbranchs[cont->nbranchc++] = l_line->tabs;
 			return;
 		}
-		
+
 		if (l_line->str[l_line->comment - 2] == '=' || \
 		    check_word(l_line->str, "enum", l_line->str + l_line->comment))
 		{
@@ -415,20 +442,20 @@ static void parser(FILE *out, FILE *src, const type ftype)
 	line_t *l_line = &cont.l_line;
 	line->str   = malloc(sizeof(char) * 2000);
 	l_line->str = malloc(sizeof(char) * 2000);
-	
+
 	get_line(l_line, src, &cont.mcom);
 	while (true)
 	{
 		const bool cond = get_line(line, src, &cont.mcom);
 		++cont.gloc;
-		
+
 		if (line->comment != 0 || l_line->comment != 0)
 		{
 			term_check(&cont);
 		}
 		strip_newline(l_line->str);
 		fprintf(out, "%s", l_line->str);
-		
+
 		if (line->comment != 0 || l_line->comment != 0)
 		{
 			char branch_line[LINE_MAX] = "";
@@ -446,12 +473,12 @@ static void parser(FILE *out, FILE *src, const type ftype)
 		{
 			fputc('\n', out);
 		}
-		
+
 		if (!cond)
 		{
 			break;
 		}
-		
+
 		transfere_line(l_line, line);
 	}
 }
@@ -459,7 +486,7 @@ static void parser(FILE *out, FILE *src, const type ftype)
 static type modeset(const char *path)
 {
 	const char *dot = strrchr(path, '.');
-	
+
 	if (dot)
 	{
 		if (!strcmp(dot, ".c")   || !strcmp(dot, ".h"))   return c;
@@ -467,7 +494,7 @@ static type modeset(const char *path)
 		if (!strcmp(dot, ".go"))   return go;
 		if (!strcmp(dot, ".java")) return java;
 	}
-	
+
 	fprintf(stderr, "unable to detect filetype, disabling all language specific rules %s", path);
 	return gen;
 }
@@ -475,51 +502,49 @@ static type modeset(const char *path)
 static void file_loader(char *path)
 {
 	FILE *out, *src = fopen(path, "r");
-	
+
 	if (!src)
 	{
 		perror("failed to open source");
 		exit(1);
 	}
-	
+
+	char out_path[255];
+	size_t path_length = strlen(path);
+
+	if (path_length < 4 || strcmp(path + path_length - 3, ".ib"))
+	{
+		fprintf(stderr, "defined input is not a ib file %s", path);
+		strcpy(out_path, path);
+		strcat(out_path, ".unib");
+	}
+	else
+	{
+		strncpy(out_path, path, strrchr(path,'.') - path);
+		path[strrchr(path, '.') - path] = '\0';
+	}
+
 	if (to_stdout)
 	{
 		out = stdout;
 	}
+	else if (overwrite_out)
+	{
+		out = fopen(overwrite_out, "w");
+	}
 	else
 	{
-		char out_path[255];
-		
-		if (strlen(path) < 4 || strcmp(path + strlen(path) - 3, ".ib"))
-		{
-			fprintf(stderr, "defined input is not a ib file %s", path);
-			strcpy(out_path, path);
-			strcat(out_path, ".unib");
-		}
-		else
-		{
-			strncpy(out_path, path, strrchr(path,'.') - path);
-			path[strrchr(path, '.') - path] = '\0';
-		}
-		
-		if (overwrite_out)
-		{
-			out = fopen(overwrite_out, "w");
-		}
-		else
-		{
-			out = fopen(path, "w");
-		}
-		
-		if (!out)
-		{
-			perror("failed to open destination");
-			exit(1);
-		}
+		out = fopen(path, "w");
 	}
-	
+
+	if (!out)
+	{
+		perror("failed to open destination");
+		exit(1);
+	}
+
 	parser(out, src, modeset(path));
-	
+
 	fclose(src);
 	if (!to_stdout)
 	{
@@ -543,49 +568,25 @@ static void help(void)
 
 int main(const int argc, char **argv)
 {
-	
 	const char * short_options = "hvVs:o:St";
 	const struct option long_options[] =
 	{
-		{
-			"help",    no_argument,       0, 'h'
-		},
-		
-		{
-			"verbose", no_argument,       0, 'v'
-		},
-		
-		{
-			"version", no_argument,       0, 'V'
-		},
-		
-		{
-			"spaces",  required_argument, 0, 's'
-		},
-		
-		{
-			"output",  required_argument, 0, 'o'
-		},
-		
-		{
-			"stdout",  no_argument,       0, 'S'
-		},
-		
-		{
-			"tab",     no_argument,       0, 't'
-		},
-		
-		{
-			0, 0, 0, 0
-		},
+		{ "help",    no_argument,       0, 'h' },
+		{ "verbose", no_argument,       0, 'v' },
+		{ "version", no_argument,       0, 'V' },
+		{ "spaces",  required_argument, 0, 's' },
+		{ "output",  required_argument, 0, 'o' },
+		{ "stdout",  no_argument,       0, 'S' },
+		{ "tab",     no_argument,       0, 't' },
+		{ 0, 0, 0, 0 },
 	};
-	
+
 	while (1)
 	{
 		const int opt = getopt_long(argc, argv, short_options, long_options, NULL);
-		
+
 		if (opt == -1) break;
-		
+
 		switch (opt)
 		{
 			case -1:
@@ -616,19 +617,19 @@ int main(const int argc, char **argv)
 				continue;
 		}
 	}
-	
+
 	if (optind >= argc)
 	{
 		fprintf(stderr, "no files defined\n");
 		help();
 		exit(0);
 	}
-	
+
 	while (optind < argc)
 	{
 		file_loader(argv[optind]);
 		++optind;
 	}
-	
+
 	exit(0);
 }

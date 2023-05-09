@@ -2,20 +2,19 @@
 
 class test
 	public:
-		test(int hidden):_hidden(hidden)
-			
-		
+		test(int hidden):_hidden(hidden) {}
+
 		bool check_hidden()
 			if (_hidden == 1)
 				return true
 			return false
-		
+
 	private:
 		int _hidden = 0
 
 int main()
 	test _test(1)
-	
+
 	if (_test.check_hidden())
 		std::cout << "it works!\n"
 		return 0
