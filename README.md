@@ -183,8 +183,8 @@ set listchars=tab:>\ ,space:.
 
 ### Packages
 
-- gentoo [my ebuild repo](https://github.com/Nik-Nothing/niki-gentoo)
-- arch [AUR](https://aur.archlinux.org/packages/ib-git) [my pkgbuild repo](https://github.com/Nik-Nothing/niki-pacman)
+- gentoo [my ebuild repo](https://github.com/Im-0xea/xea-ebuilds)
+- arch [AUR](https://aur.archlinux.org/packages/ib-git) [my pkgbuild repo](https://github.com/Im-0xea/xea-pkgbuilds)
 
 ### Source
 
